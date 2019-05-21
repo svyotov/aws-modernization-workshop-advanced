@@ -1,0 +1,26 @@
+---
+id: modernization-workshop
+name: Digital Modernization Workshop
+workshop_title: "Digital Modernization"
+revision: TrimbleJune2019
+logo: "aws-smile.png"
+enable_issue_submission: false
+content:
+  url: https://raw.githubusercontent.com/darkreapyre/aws-modernization-workshop/master
+#repo_url: https://github.com/darkreapyre/aws-modernization-workshop
+vars:
+  WORKSHOP_VERSION: v1.0
+modules:
+  activate:
+  - "modules_create-environment_readme"
+  - "modules_getting-started_readme"
+  - "modules_containerize-application_readme"
+#  - "modules_artifactory_readme"
+  - "modules_container-registry_readme"
+  - "modules_container-orchestration-ecs_readme"
+  - "modules_container-orchestration-eks_readme"
+  - "modules_monitor-application_readme"
+  - "modules_container-elasticity_readme"
+  - "modules_cicd_readme"
+  - "modules_security_readme"
+  - "modules_feedback_readme"

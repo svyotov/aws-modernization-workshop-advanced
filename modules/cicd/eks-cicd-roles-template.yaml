@@ -1,0 +1,166 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Roles for CICD module of the aws-modernization-workshop.
+Metadata: {}
+Parameters: {}
+Resources:
+  ekscicddemobucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: 'arn:aws:logs:*:*:*'
+              - Effect: Allow
+                Action:
+                  - 'cloudformation:DescribeStacks'
+                  - 'cloudformation:DescribeStackEvents'
+                  - 'cloudformation:DescribeStackResource'
+                  - 'cloudformation:DescribeStackResources'
+                  - 'ec2:DescribeInstances'
+                  - 'ec2:AssociateIamInstanceProfile'
+                  - 'ec2:ReplaceIamInstanceProfileAssociation'
+                  - 'iam:ListInstanceProfiles'
+                  - 'iam:PassRole'
+                  - 'codepipeline:*'
+                  - 'ecr:*'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 's3:*'
+                Resource: '*'
+  CodepipleServiceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - 's3:*'
+                Resource:
+                  - '*'
+                Effect: Allow
+              - Action:
+                  - 'codecommit:GetBranch'
+                  - 'codecommit:GetCommit'
+                  - 'codecommit:UploadArchive'
+                  - 'codecommit:GetUploadArchiveStatus'
+                  - 'codecommit:CancelUploadArchive'
+                Resource: '*'
+                Effect: Allow
+              - Action:
+                  - 'codepipeline:*'
+                  - 'iam:ListRoles'
+                  - 'iam:PassRole'
+                  - 'codedeploy:CreateDeployment'
+                  - 'codedeploy:GetApplicationRevision'
+                  - 'codedeploy:GetDeployment'
+                  - 'codedeploy:GetDeploymentConfig'
+                  - 'codedeploy:RegisterApplicationRevision'
+                  - 'lambda:*'
+                  - 'sns:*'
+                Resource: '*'
+                Effect: Allow
+              - Action:
+                  - 'codebuild:StartBuild'
+                  - 'codebuild:StopBuild'
+                  - 'codebuild:BatchGet*'
+                  - 'codebuild:Get*'
+                  - 'codebuild:List*'
+                  - 'codecommit:GetBranch'
+                  - 'codecommit:GetCommit'
+                  - 'codecommit:GetRepository'
+                  - 'codecommit:ListBranches'
+                  - 's3:GetBucketLocation'
+                  - 's3:ListAllMyBuckets'
+                Effect: Allow
+                Resource: '*'
+              - Action:
+                  - 'logs:GetLogEvents'
+                Effect: Allow
+                Resource: 'arn:aws:logs:*:*:log-group:/aws/codebuild/*:log-stream:*'
+  CodeBuildServiceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: CloudWatchLogsPolicy
+                Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource:
+                  - '*'
+              - Sid: CodeCommitPolicy
+                Effect: Allow
+                Action:
+                  - 'codecommit:GitPull'
+                  - 'ecr:*'
+                Resource:
+                  - '*'
+              - Sid: S3GetObjectPolicy
+                Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:GetObjectVersion'
+                  - 's3:PutObject'
+                Resource:
+                  - '*'
+              - Sid: SSMParameterPolicy
+                Effect: Allow
+                Action:
+                  - 'ssm:GetParameters'
+                Resource:
+                  - '*'
+Outputs:
+  LambdaExecutionRoleArn:
+    Value: !GetAtt
+      - LambdaExecutionRole
+      - Arn

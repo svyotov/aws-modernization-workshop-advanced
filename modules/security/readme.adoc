@@ -1,0 +1,300 @@
+= Digital Modernization
+
+:imagesdir: ../../images
+:icons: font
+
+== Modernization Image scanning.
+
+****
+*Expected Outcome:*
+
+* 200 level Understanding of a image scanning:
+** Deploy Clair scanning.
+** Invoke Clair scanning.
+
+*Lab Requirements:*
+
+* Cloud9 IDE.
+* Amazon Elastic Container Service Cluster.
+
+*Average Lab Time:*
+45 minutes
+****
+
+=== Introduction
+
+In this module, we will deploy *Clair* to your AWS account using a CloudFormation template.
+
+*Clair* is an image scanning solution which detects vulnerabilities with container images, image dependencies. Security teams and developers alike can use Clair to scan resources for security risks. Development teams can do this on an adhoc basis while building to see if there are concerns with the resources they are consuming. Security teams can perform scans against resources, work with developement teams to address the concerns and then publish pre-approved or white listed resources to a repository which developers can consume with confidence.
+
+Implementing image scanning as part of a DevSecOps process is the first step in protecting against risks from 3^rd^ party sources. Consuming images not build by you, there is often not a clear understanding of the components, layers and dependencies and the posible risks related to these. For more detail regarding Clair see https://github.com/coreos/clair[https://github.com/coreos/clair]
+
+For this module of the workshop, we will be provisioning Clair as a Docker image running on AWS Fargate.
+
+=== Getting Started with Clair container image scanner
+Step 1:: Switch to the `terminal` your Cloud9 IDE environment change to this modules' directory by running:
++
+[source,shell]
+----
+cd ~/environment/aws-modernization-workshop/modules/security
+----
++
+Step 3:: Deploy the CloudFormation template.
++
+****
+The CloudFormation Template will create the following *key* resources in your AWS Account:
+
+* `FargateCluster` - An Amazon ECS Fargate cluster called `Clair`.
+* `ClairDB` - An Amzon RDS for PostgreSQL database of vulnerabilities.
+****
++
+[source,shell]
+----
+aws cloudformation create-stack --stack-name "Clair" \
+--template-body file://clair-existing-vpc.yaml --parameters \
+ParameterKey=VPC,ParameterValue="$(aws cloudformation describe-stacks --stack-name petstore | jq -r '.Stacks[0].Outputs[]|select(.OutputKey=="VPC")|.OutputValue')" \
+ParameterKey=Subnet1,ParameterValue="$(aws cloudformation describe-stacks --stack-name petstore | jq -r '.Stacks[0].Outputs[]|select(.OutputKey=="Subnet1")|.OutputValue')" \
+ParameterKey=Subnet2,ParameterValue="$(aws cloudformation describe-stacks --stack-name petstore | jq -r '.Stacks[0].Outputs[]|select(.OutputKey=="Subnet2")|.OutputValue')" \
+--capabilities CAPABILITY_NAMED_IAM
+----
++
+Example Output:
++
+[.output]
+----
+{
+    "StackId": "arn:aws:cloudformation:us-west-2:179830185540:stack/Clair/1d5c4ce0-7c10-11e9-b90e-02d75f92ff16"
+}
+----
++
+Step 4:: Wait for the template to finish deploying.
++
+[source,shell]
+----
+until [[ `aws cloudformation describe-stacks --stack-name "Clair" --query "Stacks[0].[StackStatus]" --output text` == "CREATE_COMPLETE" ]]; do  echo "The stack is NOT in a state of CREATE_COMPLETE at `date`";   sleep 30; done && echo "The Stack is built at `date` - Please proceed"
+----
+
+NOTE: It may take between 10 to 15 minutes for the stack to complete.
+
+Step 5:: Go to the https://console.aws.amazon.com/ecs[Amazon ECS console], select the `Clair` cluster. Click the *Tasks* tab and click the *RUNNING* task.
++
+image:security-task.png[Click Task]
++
+Step 6:: Now select the *Logs* Tab, you will see the events for the Clair health service, database migrations and update of the vulnerabilities databases.
+
+NOTE: This step will take some time to complete. Should the scanner be used before this update is complete, many security risks may not be detected.
+
+=== Invoking Clair scanner
+In order to run a vulnerability scan, we will use a commandline tool *Klar* to invoke a Clair scan. Klar is a simple tool to analyze images stored in a private or public Docker registry for security vulnerabilities using Clair.
+
+For more detail regarding Klar see https://github.com/optiopay/klar[https://github.com/optiopay/klar]
+
+Step 1:: In the Cloud9 IDE, switch to the `terminal` ensurre you are working in the modules' root directory by running:
++
+[source,shell]
+----
+cd ~/environment/aws-modernization-workshop/modules/security
+----
++
+Step 2:: We will now download the `klar` binary and configure `execute` permissions, by running the following commands:
++
+[source,shell]
+----
+curl -kLO https://github.com/optiopay/klar/releases/download/v2.4.0/klar-2.4.0-linux-amd64
+
+chmod +x ./klar-2.4.0-linux-amd64
+
+mv ./klar-2.4.0-linux-amd64 ./klar
+----
++
+Step 3:: Before we can invoke `klar`, we need to collect the IP Address of the Clair Fargate instance. Use the AWS CLI ti get the Address as follows:
++
+[source,shell]
+----
+aws ec2 describe-network-interfaces \ 
+--network-interface-ids=$(aws ecs describe-tasks --cluster=Clair) \ 
+--tasks=$(aws ecs list-tasks --cluster=Clair --query taskArns[0] --output=text) \
+--query tasks[0].attachments[0].details[1].value --output=text) \
+--query NetworkInterfaces[0].Association.PublicIp --output=text
+----
++
+Step 4:: Next we will run a manual scan of container image in *Dockerhub*.
++
+NOTE: This step will require the Clair CloudFormation stack launched above to be in a `Create Complete` State.
++
+[source,shell]
+----
+CLAIR_ADDR=<YOUR CLAIR FARGATE INSTACE IP >:6060 ./klar debian:9
+----
++
+This will display the number of vulnerabilities, number of high risks, the spacifics of the risk and mitigations.
++
+Step 4:: Next we will run a manual scan of MySQL.
++
+[source,shell]
+----
+CLAIR_ADDR=<YOUR CLAIR FARGATE INSTACE IP>:6060 ./klar mysql/mysql-server
+----
++
+In both the above scans you are able to to detect risks within artifacts devleopment teams may be consuming within their projects. Security teams can make use of this type of scanning in an asynconous fashion to scan resources , address concerns and then publish white listed resources for developement teams to consume with confidence.
++
+These pre-approved resources could be stored within a link:https://jfrog.com/artifactory/[JFrog Artifactory] to further secure your development binaries.
+
+=== Integration of Klar and Clair with AWS ECR
+During the course of this workshop we have created two containers for our *Petstore* application, namely:
+
+* petstore_frontend
+* petstore_postgres
+
+Next we will run a vulnerability scan on these container images to ensure that they are not vulnerable once in production.
+
+Step 1:: Since AWS ECR does not use perminant credentials, these must be retrived using the `aws ecr get-login` CLI command.
++
+NOTE: These credentials are valid for 12 hours.
++
+[source,shell]
+----
+DOCKER_LOGIN=`aws ecr get-login --no-include-email`
+PASSWORD=`echo $DOCKER_LOGIN | cut -d' ' -f6`
+DOCKER_USER=AWS DOCKER_PASSWORD=${PASSWORD} ./klar <Repository URI:TAG>
+----
++
+To make this easier, we have put these commands together into a simple script, `scan.sh` which accepts the `Repository URI` and `TAG` as an input.
++
+Step 12:: But first, lets modify the permisions on the script by running the following command:
++
+[source,shell]
+----
+chmod +x ./scan.sh
+----
++
+Step 13:: Then we can collect `Repository URI:TAG` by using the following AWS CLI command:
++
+[source,shell]
+----
+aws ecr describe-repositories | jq -r '.repositories[] | select(.repositoryName | contains("petstore")).repositoryUri' 
+----
++
+Example Output:
++
+[.output]
+----
+<REDACTED>.dkr.ecr.us-west-2.amazonaws.com/petstore_frontend
+<REDACTED>.dkr.ecr.us-west-2.amazonaws.com/petstore_postgres
+----
++
+Step 14:: Now execute the script to scan image on your ECR repositories, each time, substituting one of the outputs from *Step 13* as a command paramater as follows:
++
+[source,shell]
+----
+./scan.sh <Repository URI:TAG> 
+----
++
+You will see that the `petstore_frontend` repository contians no vulnerabilities, while the `petstore_postgres` repository has a number of vulnerbailties. Your security teams would need to resolve these vulnerabiltiies before redeploying the `petsore` application into production. To incorporate these changes automatically your security team may find it beneficial to review this link:https://aws.amazon.com/blogs/compute/scanning-docker-images-for-vulnerabilities-using-clair-amazon-ecs-ecr-aws-codepipeline/[blog] post.
+
+////
+==== Integrating image scanning into CICD.
+
+This process can be integrated into the CICD process by adding the Klar instructions into the buildspec.yml used by AWS Code Build to build the images.
+
+The following is the buildspec.yml used in the CICD lab:
+
+[source,shell]
+----
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      - REPOSITORY_URI=$(aws ecr describe-repositories --repository-name petstore_frontend --query=repositories[0].repositoryUri --output=text)
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - PWD=$(pwd)              
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - cd modules/containerize-application
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo Writing image definitions file...
+      - echo Source DIR ${CODEBUILD_SRC_DIR}
+      - printf '[{"name":"petstore","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > ${CODEBUILD_SRC_DIR}/imagedefinitions.json        
+----
+
+The following would need to be added to the pre_build step:
+
+[source,shell]
+----
+      - echo Setting up Clair client Klar
+      - curl -kLO https://github.com/optiopay/klar/releases/download/v2.3.0/klar-2.3.0-linux-amd64
+      - chmod +x ./klar-2.3.0-linux-amd64
+      - mv ./klar-2.3.0-linux-amd64 ./klar
+      - DOCKER_LOGIN=`aws ecr get-login --region $AWS_DEFAULT_REGION`
+      - PASSWORD=`echo $DOCKER_LOGIN | cut -d' ' -f6`
+      - mkdir outputs
+----
+
+The following would need to be run post build:
+
+[source,shell]
+----
+      - bash -c "if [ /"$CODEBUILD_BUILD_SUCCEEDING/" == /"0/" ]; then exit 1; fi"
+      - echo Build stage successfully completed on `date`
+      - echo Pushing the Docker image...
+      - docker push $IMAGE_URI
+      - echo Running Clair scan on the image
+      - DOCKER_USER=AWS DOCKER_PASSWORD=${PASSWORD} CLAIR_ADDR=$CLAIR_URL ../klar $REPOSITORY_URI:$IMAGE_TAG
+----
+
+The final product would look something like:
+
+[source,shell]
+----
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      - REPOSITORY_URI=$(aws ecr describe-repositories --repository-name petstore_frontend --query=repositories[0].repositoryUri --output=text)
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - PWD=$(pwd) 
+      - echo Setting up Clair client Klar
+      - wget https://github.com/optiopay/klar/releases/download/v2.3.0/klar-2.3.0-linux-amd64
+      - chmod +x ./klar-2.3.0-linux-amd64
+      - mv ./klar-2.3.0-linux-amd64 ./klar
+      - DOCKER_LOGIN=`aws ecr get-login --region $AWS_DEFAULT_REGION`
+      - PASSWORD=`echo $DOCKER_LOGIN | cut -d' ' -f6`
+      - mkdir outputs             
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - cd modules/containerize-application
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+  post_build:
+    commands:
+      - bash -c "if [ /"$CODEBUILD_BUILD_SUCCEEDING/" == /"0/" ]; then exit 1; fi"
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo Running Clair scan on the image
+      - DOCKER_USER=AWS DOCKER_PASSWORD=${PASSWORD} CLAIR_ADDR=$CLAIR_URL ../klar $REPOSITORY_URI:$IMAGE_TAG
+      - echo Writing image definitions file...
+      - echo Source DIR ${CODEBUILD_SRC_DIR}
+      - printf '[{"name":"petstore","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > ${CODEBUILD_SRC_DIR}/imagedefinitions.json   
+----
+////

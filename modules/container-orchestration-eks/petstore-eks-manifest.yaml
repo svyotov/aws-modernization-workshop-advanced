@@ -1,0 +1,152 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Namespace
+  metadata:
+    name: petstore
+
+- kind: PersistentVolume
+  apiVersion: v1
+  metadata:
+    name: postgres-pv-volume
+    namespace: petstore
+    labels:
+      type: local
+  spec:
+    storageClassName: gp2
+    capacity:
+      storage: 20Gi
+    accessModes:
+      - ReadWriteMany
+    hostPath:
+      path: "/mnt/data"
+
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: postgres-pv-claim
+    namespace: petstore
+  spec:
+    storageClassName: gp2
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 20Gi
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: postgres
+    namespace: petstore
+  spec:
+    ports:
+    - port: 5432
+    selector:
+      app: postgres
+    clusterIP: None
+
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: postgres
+    namespace: petstore
+  spec:
+    selector:
+      matchLabels:
+        app: postgres
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          app: postgres
+      spec:
+        containers:
+        - image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_postgres:latest
+          name: postgres
+          env:
+          - name: POSTGRES_PASSWORD
+            value: password
+          - name: POSTGRES_DB
+            value: petstore
+          - name: POSTGRES_USER
+            value: admin
+          ports:
+          - containerPort: 5432
+            name: postgres
+          volumeMounts:
+          - name: postgres-persistent-storage
+            mountPath: /var/lib/postgresql/data
+            subPath: petstore
+        volumes:
+        - name: postgres-persistent-storage
+          persistentVolumeClaim:
+            claimName: postgres-pv-claim
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: frontend
+    namespace: petstore
+  spec:
+    selector:
+      app: frontend
+    ports:
+    - port: 80
+      targetPort: http-server
+      name: http
+    - port: 9990
+      targetPort: wildfly-cord
+      name: wildfly-cord
+    type: LoadBalancer
+
+- apiVersion: apps/v1beta1
+  kind: Deployment
+  metadata:
+    name: frontend
+    namespace: petstore
+    labels:
+      app: frontend
+  spec:
+    replicas: 2
+    selector:
+      matchLabels:
+        app: frontend
+    template:
+      metadata:
+        labels:
+          app: frontend
+      spec:
+        initContainers:
+        - name: init-frontend
+          image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_postgres:latest
+          command: ['sh', '-c',
+                    'until pg_isready -h postgres.petstore.svc -p 5432;
+                    do echo waiting for database; sleep 2; done;']
+        containers:
+        - name: frontend
+          image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_frontend:latest
+          resources:
+            requests:
+              memory: "512m"
+              cpu: "512m"
+          ports:
+          - name: http-server
+            containerPort: 8080
+          - name: wildfly-cord
+            containerPort: 9990
+          env:
+          - name: DB_URL
+            value: "jdbc:postgresql://postgres.petstore.svc:5432/petstore?ApplicationName=applicationPetstore"
+          - name: DB_HOST
+            value: postgres.petstore.svc
+          - name: DB_PORT
+            value: "5432"
+          - name: DB_NAME
+            value: petstore
+          - name: DB_USER
+            value: admin
+          - name: DB_PASS
+            value: password

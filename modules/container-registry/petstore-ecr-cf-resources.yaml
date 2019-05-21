@@ -1,0 +1,10 @@
+Resources:
+  PetStorePostgreSQLRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: "petstore_postgres"
+  PetStoreFrontendRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: "petstore_frontend"
+

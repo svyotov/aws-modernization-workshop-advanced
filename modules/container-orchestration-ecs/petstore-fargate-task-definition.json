@@ -1,0 +1,84 @@
+{
+  "family": "petstore",
+  "networkMode": "awsvpc",
+  "containerDefinitions": [{
+      "name": "postgres",
+      "image": "<YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_postgres:latest",
+      "cpu": 512,
+      "memoryReservation": 1024,
+      "environment": [{
+          "name": "POSTGRES_DB",
+          "value": "petstore"
+        },
+        {
+          "name": "POSTGRES_USER",
+          "value": "admin"
+        },
+        {
+          "name": "POSTGRES_PASSWORD",
+          "value": "password"
+        }
+      ],
+      "portMappings": [{
+        "containerPort": 5432
+      }],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "petstore",
+          "awslogs-region": "us-west-2",
+          "awslogs-stream-prefix": "petstore/postgres"
+        }
+      }
+    },
+    {
+      "name": "petstore",
+      "image": "<YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_frontend:latest",
+      "cpu": 512,
+      "memoryReservation": 1024,
+      "environment": [
+        {
+          "name": "DB_HOST",
+          "value": "127.0.0.1"
+        },
+        {
+          "name": "DB_NAME",
+          "value": "petstore"
+        },
+        {
+          "name": "DB_PASS",
+          "value": "password"
+        },
+        {
+          "name": "DB_PORT",
+          "value": "5432"
+        },
+        {
+          "name": "DB_URL",
+          "value": "jdbc:postgresql://127.0.0.1:5432/petstore?ApplicationName=applicationPetstore"
+        },
+        {
+          "name": "DB_USER",
+          "value": "admin"
+        }
+      ],
+      "portMappings": [{
+        "containerPort": 8080
+      }],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "petstore",
+          "awslogs-region": "us-west-2",
+          "awslogs-stream-prefix": "petstore/frontend"
+        }
+      }
+    }
+  ],
+  "executionRoleArn": "arn:aws:iam::<YourAccountID>:role/petstoreExecutionRole",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "1 vcpu",
+  "memory": "2 gb"
+}

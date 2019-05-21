@@ -1,0 +1,39 @@
+= Digital Modernization
+
+:imagesdir: ../../images
+:icons: font
+
+== Creating the Workshop Environment
+
+****
+*Lab Requirements:*
+
+* An AWS account provided to you by the AWS Instructor.
+* Working Laptop with Internet Access.
+
+*Note:*
+
+* All AWS resources used for this workshop are to be created in the *us-west-1* AWS Region.
+****
+
+=== Workshop Introduction
+
+Welcome to the workshop on AWS Digital Modernization. The steps outlined below will allow you to quickly create an environment that will allow you to work with the instructions contained througout this workshop.
+
+NOTE: If you do not have access to an AWS Account, please see the AWS Instructor.
+
+=== Create the Workshop environment using CloudFormation
+
+Ensure that you have the appropriate permissions to provision resources in your AWS account. Then, log into the AWS account provided to you and click *Deplot to AWS*:
+
+image:deploy-to-aws.png["Deploy to AWS",width=128,link="https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create/review?stackName=AWSModernizationWorkshop&templateURL=https://s3-us-west-2.amazonaws.com/modernization-workshop-west-2/create-environment/templates/workshop_env_master.yaml"]
+
+****
+The CloudFormation Template will create the following resources in your AWS Account:
+
+* `C9InstanceFunctionRole` - IAM Role for access to AWS resources created suring the Workshop.
+* `C9InstanceFunction` - Lambda Function to map the IAM Role to the Cloud9 Instance.
+* `C9InstanceCR` - Cloud9 IDE Instance.
+****
+
+Once the environment has been deployed, you may proceed with the additional configuration steps in the *Getting Started* module.

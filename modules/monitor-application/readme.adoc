@@ -1,0 +1,1018 @@
+= Digital Modernization
+
+:imagesdir: ../../images
+:icons: font
+
+== Monitoring the Application
+
+****
+*Expected Outcome:*
+
+//// 
+* 200 level understaing of Healthchecks to the Pet Store Docker artifacts.
+////
+* 200 level understanding of Container Healthchecks using ECS & Fargate.
+* 200 level understanding of Container Healthchecks using EKS.
+* 200 level understanding of shipping container logs for to CloudWatch.
+
+*Lab Requirements:*
+
+* Clou9 IDE.
+* One of the following:
+** an Amazon Elastic Container Service Cluster.
+** an Amazon Elastic Container Service for Kubernetes Cluster.
+
+*Average Lab Time:* 
+45-60 minutes
+****
+
+=== Introduction
+When it comes to monitoring an application, a key concept to understand is you need to ensure that the application is working rather than only looking to see if server or container is running. In this module, we will go over some key concepts in monitoring and logging and how to integrate those concepts with our Pet Store application. The module will focus on the five areas, namely:
+
+////
+. Docker Healthchecks.
+. Docker Compose Healthchecks
+////
+. ECS & Fargate Healthchecks.
+. Kubernetes Healthchecks.
+. Monitoring Healthchecks using link:https://aws.amazon.com/cloudwatch/[Amazon Cloudwatch].
+
+////
+Let's start by looking at healthchecks in the container itself.
+
+==== 1. Docker Healthchecks
+The `HEALTHCHECK` instruction tells Docker how to test a container to check that it is still working. This can detect cases such as a web server that is stuck in an infinite loop and unable to handle new connections, even though the server process is still running. When a container has a healthcheck specified, it has a health status in addition to its normal status. This status is initially starting. Whenever a health check passes, it becomes `healthy` (whatever state it was previously in). After a certain number of consecutive failures, it becomes `unhealthy`.
+
+Step 1:: To get started, use the Cloud 9 IDE navigation pane to navigate to the folder where you created your `Dockerfile` in the `containerize-application` folder.  Double-click to open the `Dockerfile`.
+
+Step 2:: At the bottom of our `Dockerfile` we will add a `HEALTHCHECK` that tests our application server. Add the `HEALTHCHECK` between the `ENTRYPOINT` command in the `Dockerfile` like the example below:
++
+[source,shell]
+----
+# run the application
+ENTRYPOINT [ "/opt/jboss/docker-entrypoint.sh" ]
+# add a Healthcheck
+HEALTHCHECK --interval=30s --timeout=5s --retries=5 --start-period=30s CMD curl --fail http://127.0.0.1:8080/ || exit 1
+CMD [ "-b", "0.0.0.0", "-bmanagement", "0.0.0.0" ]
+----
++
+To review the above command we will go over some of the flags. The options that can appear before `CMD` in a `HEALTHCHECK` are:
+
+* `--interval=DURATION` (default: `30s`)
+* `--timeout=DURATION` (default: `30s`)
+* `--retries=N` (default: `3`)
+* `--start-period=DURATION` (default: `0s`)
+
++
+You will notice the `CMD curl --fail http://127.0.0.1:8080/ || exit 1` in our `HEALTHCHECK`. This is how we are testing that the application is running. The commands' `exit status` indicates the health status of  the container. The possible values are:
+
+* `0`: success - the container is healthy and ready for use
+* `1`: unhealthy - the container is not working correctly
+* `2`: reserved - do not use this exit code
+
+Step 3:: Save the `Dockerfile` and move on to the next section. 
+
+NOTE: There is a working `Dockerfile` in the `monitor-application/container` folder within this repository if you need a full example.
+
+=== Healthchecks in Docker Compose
+As a refresher, Docker Compose is a tool for defining and running multi-container Docker applications. With Compose, you use a `YAML` file to configure your application’s services. Then, with a single command, you create and start all the services from your configuration.
+
+Using Compose is basically a three-step process:
+
+* Define your app’s environment with a `Dockerfile` so it can be reproduced anywhere.
+* Define the services that make up your app in `docker-compose.yml` so they can be run together in an isolated environment.
+* Run `docker-compose` up and Compose starts and runs your entire app.
+
+==== Configuring Docker compose Healthchecks
+Now we wil follow this three-step process to see out `HEALTHCHECKS` in action with `docker-compose`.
+
+Step 1:: To get started, navigate to the folder where you created your `docker-compose.yml` in the `containerize-application` folder from the previous lab within this repository. Then open the `docker-compose.yml` in the Cloud9 IDE.
++
+Step 2:: Similar to the previous section, we are going to add healthchecks but this time we will also add one for our `postgres` container as well. 
++
+Step 3:: Add the `healthcheck` section to `postgres` so that it looks like the example below. For our healthcheck, we are going to add a simple `CMD-SHELL` command to issue the `pg_isready` utility for checking the connection status to *PostgreSQL*. Since we are using the official *PostgreSQL* image available from Docker Hub the `pg_isready` command should be available within our container.
++
+[source,yaml]
+----
+version: '3.4'
+
+services:
+
+  postgres:
+    image: postgres:9.6
+    ports:
+      - 5432:5432
+    environment:
+      - 'POSTGRES_DB=petstore'
+      - 'POSTGRES_USER=admin'
+      - 'POSTGRES_PASSWORD=password'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+----
++
+Step 4:: For the Pet Store application add the following `healthcheck` section to `petstore` so that it looks like the example below. For our healthcheck, we are simply mirroring what was already defined in the `Dockerfile` earlier.
++
+[source,yaml]
+----
+  petstore:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    ports:
+      - 8080:8080
+      - 9990:9990
+    environment:
+      - 'DB_URL=jdbc:postgresql://postgres:5432/petstore?ApplicationName=applicationPetstore'
+      - 'DB_HOST=postgres'
+      - 'DB_PORT=5432'
+      - 'DB_NAME=petstore'
+      - 'DB_USER=admin'
+      - 'DB_PASS=password'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+----
++
+Step 5:: Save the `docker-compose.yml` and move on to the next section.
+
+NOTE: There is a working `docker-compose.yml` in the `monitor-application/container` folder within this repository if you need a full example.
+
+==== Testing the Healthchecks
+
+Now that we've added healtchecks to our Pet Store application, we need to rebuild the petstore container to add our changes. 
+
+Step 1:: To get started, stop and delete any running Pet Store containers that you might have running. Switch back to the `terminal` in your Cloud9 environment ensure your current working directory is `~/environment/aws-moderinzation-workshop/modules/containerize-application/` and run the following command:
++
+[source,shell]
+----
+docker rm -f $(docker ps -aq --filter "name=containerize-application")
+----
++
+Step 2:: Run the both the containers in the background (`-d` or daemon flag).
++
+NOTE: Bringing up the `petstore` contianer will also start the `postgres` container as it's a dependency.
++
+[source,shell]
+----
+docker-compose up -d petstore
+----
++
+Step 3:: You can check the status of the healthcheck as the Docker container starts by running the following command:
++
+[source,shell]
+----
+docker ps
+----
++
+Expected Output:
++
+[.output]
+....
+CONTAINER ID        IMAGE                               COMMAND                  CREATED             STATUS                            PORTS                                            NAMES
+89f1f4d60868        containerize-application_petstore   "/opt/jboss/docker-e…"   4 seconds ago       Up 2 seconds (health: starting)   0.0.0.0:8080->8080/tcp, 0.0.0.0:9990->9990/tcp   containerize-application_petstore_1
+23d1a16bbe4f        postgres:9.6                        "docker-entrypoint.s…"   4 seconds ago       Up 3 seconds (health: starting)   0.0.0.0:5432->5432/tcp                           containerize-application_postgres_1
+....
++
+Notice how `health: starting status` is reported in the `STATUS` column. Checking after about `30` seconds shows the status:
++
+[source,shell]
+----
+docker ps
+----
++
+Expected Output:
++
+[.output]
+....
+CONTAINER ID        IMAGE                               COMMAND                  CREATED             STATUS                    PORTS                                            NAMES
+3c4a241a76a1        containerize-application_petstore   "/opt/jboss/docker-e…"   37 seconds ago      Up 36 seconds (healthy)   0.0.0.0:8080->8080/tcp, 0.0.0.0:9990->9990/tcp   containerize-application_petstore_1
+af6abaa72091        postgres:9.6                        "docker-entrypoint.s…"   38 seconds ago      Up 37 seconds (healthy)   0.0.0.0:5432->5432/tcp                           containerize-application_postgres_1
+....
++
+Step 6:: Now that our containers are healthy for our Pet Store application, let's examine the healthchecks using `docker-inspect`.
++
+[source,shell]
+----
+docker inspect --format='{{json .State.Health}}' containerize-application_petstore_1
+----
++
+Expected Output (_redacted for brevity_):
++
+[.output]
+....
+[
+    {
+        "Id": "3c4a241a76a1c426415d629839ce92882c07cf0dac64ab7a01b9d25b770b9690",
+        "Created": "2019-05-16T20:58:27.27982249Z",
+        "Path": "/opt/jboss/docker-entrypoint.sh",
+        "Args": [
+            "-b",
+            "0.0.0.0",
+            "-bmanagement",
+            "0.0.0.0"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+
+...
+
+                    "Gateway": "172.18.0.1",
+                    "IPAddress": "172.18.0.3",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": "02:42:ac:12:00:03",
+                    "DriverOpts": null
+                }
+            }
+        }
+    }
+]
+....
++
+You can see the status of the healthchecks but they are not easy to read. A simple utility you can install on your Cloud9 environment helps make them readable is `jq`. You can learn more about it link:https://stedolan.github.io/jq/[here]. To install `jq` run the following command in your Cloud9 `terminal`:
++
+[source,shell]
+----
+sudo yum install jq -y
+----
++
+Once jq is installed, let's examine the healthchecks again by running the below command. Notice they are easier to read and you should see `"Status": "healthy"` as well as `"ExitCode": 0` which as you remember from above means the container is healthy and ready for use.
++
+[source,shell]
+----
+docker inspect containerize-application_petstore_1 | jq '.[].State.Health'
+----
++
+Expected Output (_redacted for brevity_):
++
+[.output]
+....
+{
+  "Status": "healthy",
+  "FailingStreak": 0,
+  "Log": [
+    {
+      "Start": "2019-05-16T21:02:28.702181894Z",
+      "End": "2019-05-16T21:02:28.774809936Z",
+      "ExitCode": 0,
+      "Output": "  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n                                 Dload  Upload   Total   Spent    Left  Speed\n\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\r100   289  100   289    0     0  38339      0 --:--:-- --:--:-- --:--:-- 41285\n<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n<html>\n<head>\n    <meta http-equiv=\"refresh\" content=\"0; url=shopping/main.xhtml\"/>\n    <title>Redirect...</title>\n</head>\n<body>\n\n</body>\n</html>"
+    },
+
+...
+
+    {
+      "Start": "2019-05-16T21:04:29.039449884Z",
+      "End": "2019-05-16T21:04:29.122731919Z",
+      "ExitCode": 0,
+      "Output": "  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n                                 Dload  Upload   Total   Spent    Left  Speed\n\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\r100   289  100   289    0     0  22768      0 --:--:-- --:--:-- --:--:-- 24083\n<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n<html>\n<head>\n    <meta http-equiv=\"refresh\" content=\"0; url=shopping/main.xhtml\"/>\n    <title>Redirect...</title>\n</head>\n<body>\n\n</body>\n</html>"
+    }
+  ]
+}
+....
++
+Step 7:: Once you've confirmed that our Pet Store application is working with healthchecks, stop the docker containers by running the following command:
++
+[source,shell]
+----
+docker rm -f $(docker ps -aq --filter "name=containerize-application")
+----
+////
+=== Healthchecks in Amazon ECS & Fargate
+
+NOTE: The following part of the module assumes a working ECS cluster, created in the *Amazon ECS & Fargate* module.
+
+Amazon Elastic Container Service (ECS) now supports Docker container health checks. This gives you more control over monitoring the health of your tasks and improves the ability of the ECS service scheduler to ensure your services are healthy. 
+
+Previously, the ECS service scheduler relied on the Elastic Load Balancer (ELB) to report container health status and to restart unhealthy containers. This required you to configure your ECS Service to use a load balancer, and only supported HTTP and TCP health-checks. 
+
+Now, in addition to supporting ELB health checks, Amazon ECS integrates with Docker container health checks to allow you to explicitly define and monitor the health of each container. Using the `HEALTHCHECK` command, you can define which parameters to monitor for each container in your Task Definition. Running tasks (groups of running containers) are now assigned a health status based on the health of their essential containers, and the task's health status is integrated with the ECS service scheduler to automatically redeploy unhealthy tasks and conduct rolling-updates of services.
+
+TIP: The Amazon ECS container agent only monitors and reports on the health checks specified in the task definition. Amazon ECS does not monitor Docker health checks that are embedded in a container image and not specified in the container definition. Health check parameters that are specified in a container definition override any Docker health checks that exist in the container image.
+
+Step 1:: To get started, navigate to the folder where you created your `petstore-fargate-task-definition.json` in the `containerize-orchestration-ecs` folder from the previous module within this repository. Then open the `petstore-fargate-task-definition.json` in the Cloud9 IDE.
++
+Step 2:: Add the healthcheck values to the `postgres` and `petstore` sections of `containerDefinitions` so that it looks like the example below. You will notice we are essentially setting the same settings for `healthCheck` as what we defined in the previous exercise.
++
+[source,yaml]
+----
+{
+  "family": "petstore",
+  "networkMode": "awsvpc",
+  "containerDefinitions": [{
+      "name": "postgres",
+      "image": "<YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_postgres:latest",
+      "cpu": 512,
+      "memoryReservation": 1024,
+      "environment": [{
+          "name": "POSTGRES_DB",
+          "value": "petstore"
+        },
+        {
+          "name": "POSTGRES_USER",
+          "value": "admin"
+        },
+        {
+          "name": "POSTGRES_PASSWORD",
+          "value": "password"
+        }
+      ],
+      "portMappings": [{
+        "containerPort": 5432
+      }],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "petstore",
+          "awslogs-region": "us-west-2",
+          "awslogs-stream-prefix": "petstore/postgres"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "pg_isready -U postgres"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 2,
+        "startPeriod": 300
+  
+      }
+    },
+    {
+      "name": "petstore",
+      "image": "<YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_frontend:latest",
+      "cpu": 512,
+      "memoryReservation": 1024,
+      "environment": [
+        {
+          "name": "DB_HOST",
+          "value": "127.0.0.1"
+        },
+        {
+          "name": "DB_NAME",
+          "value": "petstore"
+        },
+        {
+          "name": "DB_PASS",
+          "value": "password"
+        },
+        {
+          "name": "DB_PORT",
+          "value": "5432"
+        },
+        {
+          "name": "DB_URL",
+          "value": "jdbc:postgresql://127.0.0.1:5432/petstore?ApplicationName=applicationPetstore"
+        },
+        {
+          "name": "DB_USER",
+          "value": "admin"
+        }
+      ],
+      "portMappings": [{
+        "containerPort": 8080
+      }],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "petstore",
+          "awslogs-region": "us-west-2",
+          "awslogs-stream-prefix": "petstore/frontend"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD", "curl", "-f", "http://127.0.0.1:8080/"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 2,
+        "startPeriod": 300
+  
+      }
+    }
+  ],
+  "executionRoleArn": "arn:aws:iam::<YourAccountID>:role/petstoreExecutionRole",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "1 vcpu",
+  "memory": "2 gb"
+}
+----
++
+Step 3:: Save the `petstore-fargate-task-definition.json` file.
++
+NOTE: There is a working `petstore-fargate-task-definition.json` in the `~/environment/aws-modernization-workshop/modules/monitor-application/task-definition` folder within this repository if you need a full example.
++
+Step 4:: Update the petstore task definition from the JSON file by running this command in your Cloud9 terminal:
++
+[source,shell]
+----
+aws ecs register-task-definition --cli-input-json file://~/environment/aws-modernization-workshop/modules/container-orchestration-ecs/petstore-fargate-task-definition.json
+----
++
+Step 5:: Update the `petstore` service in the `petstore-workshop` cluster with the latest version of the `petstore` task definition by running the below command. This will also pull the latest version of the petstore_frontend container we uploaded previously.
++
+[source,shell]
+----
+aws ecs update-service --cluster petstore-workshop --service petstore --task-definition petstore --region us-west-2
+----
++ 
+Replacing the older version of your task will take a couple of minutes. To view the status navigate back to the `petstore-workshop` cluster created in a previous module and view the *petstore* service to view your tasks. You should see the new task being scheduled but you will have to wait for your task to transition to *RUNNING*.
++
+Step 6:: Once the *petstore* service is *RUNNING*, click on task. You will notice this version of the task should have a *Health Status* of *HEALTHY*. This is due to the new healthchecks we added to our task definition earlier. An example is hown below:
++
+image::ecs-task-healthy.png[Healthy Task]
++
+Step 7:: Take some time to inspect the logs for the petstore container in the new task. You should see the healtchecks every `30` seconds like below:
++
+image::ecs-task-logs.png[Task Logs]
+
+=== Healthchecks in Amazon EKS
+
+NOTE: The following section of the module assumes a working EKS cluster, created in the *Amazon EKS* module.
+
+By default, Kubernetes will restart a container if it crashes for any reason. It uses Liveness and Readiness probes which can be configured for running a robust application by identifying the healthy containers to send traffic to and restarting the ones when required.
+
+In this section, we will understand how link:https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/[liveness and readiness probes] are defined and test the same against different states of a pod. Below is the high level description of how these probes work.
+
+* *Liveness probes* are used in Kubernetes to know when a pod is alive or dead. A pod can be in a dead state for different reasons while Kubernetes kills and recreates the pod when liveness probe does not pass.
+* *Readiness probes* are used in Kubernetes to know when a pod is ready to serve traffic. Only when the readiness probe passes, a pod will receive traffic from the service. When readiness probe fails, traffic will not be sent to a pod until it passes.
+
+We will review some examples in this module to understand different options for configuring liveness and readiness probes.
+
+==== Configuring the Liveness Probe
+
+As with any Amazon EKS or Kubernetes cluster, we will use manifest file to decelaritively deploy a simple liveness probe.
+
+Step 1:: In the Cloud9 IDE `terminal`, ensure you have switched to this modules' working directory.
++
+[source,shell]
+----
+cd ~/environment/aws-modernization-workshop/modules/monitor-application/eks/
+----
++
+Step 2:: Open the `liveness-app.yaml` file by double clicking the filename in the lefthand navigation of the Cloud9 IDE.
++
+Step 3:: The file has the following contents:
++
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: liveness-app
+spec:
+  containers:
+  - name: liveness
+    image: brentley/ecsdemo-nodejs
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 3000
+      initialDelaySeconds: 5
+      periodSeconds: 5
+----
++
+Step 4:: Apply the manifest by running this command in your Cloud9 IDE `terminal`:
++
+[source,shell]
+----
+kubectl apply -f liveness-app.yaml
+----
++
+Expected Output:
++
+[.output]
+....
+pod/liveness-app created
+....
++
+Step 5:: Confirm that the pod is running by executing the following command:
++
+[source,shell]
+----
+kubectl get pod liveness-app
+----
++
+Expected Output:
++
+[.output]
+----
+NAME           READY   STATUS    RESTARTS   AGE
+liveness-app   1/1     Running   0          6s
+----
++
+NOTE: The number of `RESTARTS` is `0`.
++
+step 6:: Use `kubectl describe` command will show an event history which will show any probe failures or restarts, as follows:
++
+[source,shell]
+----
+kubectl describe pod liveness-app | grep -A20 Events
+----
++
+Expected Output:
++
+[.output]
+----
+  Type    Reason     Age   From                                                  Message
+  ----    ------     ----  ----                                                  -------
+  Normal  Scheduled  22s   default-scheduler                                     Successfully assigned default/liveness-app to ip-192-168-84-75.us-west-2.compute.internal
+  Normal  Pulling    22s   kubelet, ip-192-168-84-75.us-west-2.compute.internal  pulling image "brentley/ecsdemo-nodejs"
+  Normal  Pulled     21s   kubelet, ip-192-168-84-75.us-west-2.compute.internal  Successfully pulled image "brentley/ecsdemo-nodejs"
+  Normal  Created    21s   kubelet, ip-192-168-84-75.us-west-2.compute.internal  Created container
+  Normal  Started    20s   kubelet, ip-192-168-84-75.us-west-2.compute.internal  Started container
+----
++
+Step 7:: We will now introduce a failure inside the docker runtime by sending the `kill` command, as follows:
++
+[source,shell]
+----
+kubectl exec -it liveness-app -- /bin/kill -s SIGUSR1 1
+----
++
+Step 8:: After 15-20 seconds, re-run the `kubectl describe` command to view the `Events` output again and see what atctions the `kubelet` took.
++
+Expected Output:
++
+[.output]
+----
+  Type     Reason     Age                From                                                  Message
+  ----     ------     ----               ----                                                  -------
+  Normal   Scheduled  72s                default-scheduler                                     Successfully assigned default/liveness-app to ip-192-168-84-75.us-west-2.compute.internal
+  Warning  Unhealthy  36s (x3 over 46s)  kubelet, ip-192-168-84-75.us-west-2.compute.internal  Liveness probe failed: Get http://192.168.85.179:3000/health: net/http: request canceled (Client.Timeout exceeded while awaiting headers)
+  Normal   Pulling    6s (x2 over 71s)   kubelet, ip-192-168-84-75.us-west-2.compute.internal  pulling image "brentley/ecsdemo-nodejs"
+  Normal   Killing    6s                 kubelet, ip-192-168-84-75.us-west-2.compute.internal  Killing container with id docker://liveness:Container failed liveness probe.. Container will be killed and recreated.
+  Normal   Pulled     5s (x2 over 70s)   kubelet, ip-192-168-84-75.us-west-2.compute.internal  Successfully pulled image "brentley/ecsdemo-nodejs"
+  Normal   Created    5s (x2 over 70s)   kubelet, ip-192-168-84-75.us-west-2.compute.internal  Created container
+  Normal   Started    5s (x2 over 70s)   kubelet, ip-192-168-84-75.us-west-2.compute.internal  Started container
+----
++
+TIP: When the nodejs application entered a debug mode with `SIGUSR1` signal, it did not respond to the health check pings and the `kubelet` killed the container. The container was subject to the default restart policy.
++
+Step 9:: Confirm that the container was restarted by viewing the pod.
++
+[source,shell]
+----
+kubectl get pod liveness-app
+----
++
+Expected Output:
++
+[.output]
+----
+NAME           READY   STATUS    RESTARTS   AGE
+liveness-app   1/1     Running   1          6m42s
+----
++
+NOTE: The number of `RESTARTS` is now `1`.
+
+==== Configuring the Readiness Probe
+The `readinessProbe` definition explains how a linux command can be configured as healthcheck. We create an empty file called `/tmp/healthy`, to configure readiness probe and use the same to understand how kubelet helps to update a deployment with only healthy pods.
+
+Step 1:: Open the `readiness-deployment.yaml` file by double clicking the filename in the lefthand navigation of the Cloud9 IDE.
++
+Step 2:: The file has the following contents:
++
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: readiness-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: readiness-deployment
+  template:
+    metadata:
+      labels:
+        app: readiness-deployment
+    spec:
+      containers:
+      - name: readiness-deployment
+        image: alpine
+        command: ["sh", "-c", "touch /tmp/healthy && sleep 86400"]
+        readinessProbe:
+          exec:
+            command:
+            - cat
+            - /tmp/healthy
+          initialDelaySeconds: 5
+          periodSeconds: 3
+----
++
+Step 3:: We now create a deployment to test the readiness probe. The deployment consists of 3 replicas of the readiness probe.
++
+[source,shell]
+----
+kubectl apply -f readiness-deployment.yaml
+----
++
+Step 4:: View the deployment by executing the folloing `kubectl` command:
++
+[source,shell]
+----
+kubectl get pods -l app=readiness-deployment
+----
++
+Expected Output:
++
+[.output]
+----
+NAME                                    READY   STATUS    RESTARTS   AGE
+readiness-deployment-6b95b8dd66-dqdzq   0/1     Running   0          8s
+readiness-deployment-6b95b8dd66-tpxll   0/1     Running   0          8s
+readiness-deployment-6b95b8dd66-x2mwn   0/1     Running   0          8s
+----
++
+Step 5:: Confirm that all replicas are available to serve traffic when a service is pointed to this deployment.
++
+[source,shell]
+----
+kubectl describe deployment readiness-deployment | grep Replicas
+----
++
+Expected Output:
++
+[.output]
+----
+Replicas:               3 desired | 3 updated | 3 total | 3 available | 0 unavailable
+  Available      True    MinimumReplicasAvailable
+----
++
+Step 6:: We will now introduce a failure inside the docker runtime by deleting the `/tmp/healthy` file inside the docker runtime, since this file must be present in order for the readiness check to pass. Pick one of the 3 available pods from the output of *Step 4* to introduce a failure. Exeecute the following command, substituing the name of the pod you've selected:
++
+[source,shell]
+----
+kubectl exec -it <YOUR-READINESS-POD-NAME> -- rm /tmp/healthy
+----
++
+Step 7:: View the deployment once again by running the following command:
++
+[source,shell]
+----
+kubectl get pods -l app=readiness-deployment
+----
++
+Expected Output:
++
+[.output]
+----
+NAME                                    READY   STATUS    RESTARTS   AGE
+readiness-deployment-6b95b8dd66-74msx   0/1     Running   0          53s
+readiness-deployment-6b95b8dd66-k99vl   1/1     Running   0          53s
+readiness-deployment-6b95b8dd66-pwcgc   1/1     Running   0          53s
+----
++
+NOTE: Traffic will not be routed to the first pod in the above deployment. The `READY` column confirms that the readiness probe for this pod did not pass and hence was marked as not ready. 
++
+Step 8:: We will now check for the replicas that are available to serve traffic when a service is pointed to this deployment.
++
+[source,shell]
+----
+ kubectl describe deployment readiness-deployment | grep Replicas:
+----
++
+Expected Output:
++
+[.output]
+----
+Replicas:               3 desired | 3 updated | 3 total | 2 available | 1 unavailable
+----
++
+When the readiness probe for a pod fails, the endpoints controller removes the pod from list of endpoints of all services that match the pod.
++
+TIP: Our Liveness Probe example used `HTTP` request and Readiness Probe executed a command to check health of a pod. Same can be accomplished using a `TCP` request as described in the link:https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/[documentation].
+
+=== Understanding Shipping Logs to CloudWatch from Amazon ECS and EKS
+==== Amazon ECS
+As you are inspecting the properties of your task, each container in the task should have a link under *Log Configuration* that says `Log driver: awslogs View logs in CloudWatch`. To navigate to this link, open the link:https://us-west-2.console.aws.amazon.com/ecs/[Amazon ECS] service console and click *Clusters*. 
+
+Step 1:: Select the `petstore-workshop` cluster and click on the *Tasks* tab. Select the *Running* task.
++
+image:ecs-task.png[Running Task]
++
+Step 2:: Scroll down to the *Containers* section and expand on the container for which you wish to see the CloudWatch logs. Click on the `Log driver: awslogs View logs in CloudWatch` to open the CLoudWatch logs for the specific container.
++
+image:ecs-task-containers.png[CloudWatch Task Logs]
++
+Once the CloudWatch service consle is open, we can view the specific logs pertaining to our task.
++
+image:cw-ecs-task.png[Task Logs]
+
+The reason we have the ability to view our containers logs in CloudWatch is due to the following reasons:
+
+* Our Pet Store application is configured to log to `STDOUT` and `STDERR` which is the command output that you would normally see in an interactive terminal if you ran the container locally.
+
+* We defined the `logDriver` in our `petstore-fargate-task-definition.json` as `awslogs` along with some settings around CloudWatch. The awslogs log driver simply passes these `STDOUT` and `STDERR` from Docker to CloudWatch.
++
+[source,json]
+----
+...
+
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "petstore",
+          "awslogs-region": "us-west-2",
+          "awslogs-stream-prefix": "petstore/postgres"
+        }
+
+...
+----
++
+* In order to have our container instances send log data to CloudWatch Logs, there is an IAM policy called petstoreExecutionRole that allows your container instances to use the CloudWatch Logs APIs that we are defining in the `petstore-fargate-task-definition.json`.
++
+[source,json]
+----
+...
+
+  "executionRoleArn": "arn:aws:iam::<YourAccountID>:role/petstoreExecutionRole",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+
+...
+----
+
+==== Amazon EKS
+NOTE: The following section of the module assumes a working EKS cluster, created in the *Amazon EKS* module.
+
+A typical logging patern in Kubernetes and hence EKS is to leverage a pattern known as the *EFK stack*, which is comprised of:
+
+* link:https://www.fluentd.org/[Fluentd]
+* link:https://www.elastic.co/products/elasticsearch[Elasticsearch]
+* link:https://www.elastic.co/products/kibana[Kibana]
+
+However, in this part of the module, we will only focus on *Fluentd* as it will be the mechanism that forwards the logs from the indivudual worker nodes in the cluster to the central loggin backend, CkoudWatch. We will be deploying Fluentd as a DaemonSet, or one pod per worker node. The fluentd log daemon will collect logs and forward to CloudWatch Logs. This will require the nodes to have permissions to send logs and create log groups and log streams.
+
+Step 1:: For this part of the module we will need to ensure that the `Role Name` that the EKS worker nodes use has the necessary policy. Execute the following commands in the CLoud9 IDE `terminal` to configure the worker roles varaibales:
++
+[source,shell]
+----
+INSTANCE_PROFILE_NAME=$(aws iam list-instance-profiles | jq -r '.InstanceProfiles[].InstanceProfileName' | grep nodegroup)
+
+INSTANCE_PROFILE_ARN=$(aws iam get-instance-profile --instance-profile-name $INSTANCE_PROFILE_NAME | jq -r '.InstanceProfile.Arn')
+
+ROLE_NAME=$(aws iam get-instance-profile --instance-profile-name $INSTANCE_PROFILE_NAME | jq -r '.InstanceProfile.Roles[] | .RoleName')
+
+echo "export ROLE_NAME=${ROLE_NAME}" >> ~/.bash_profile
+
+echo "export INSTANCE_PROFILE_ARN=${INSTANCE_PROFILE_ARN}" >> ~/.bash_profile
+----
++
+Step 2:: Next we configure a policy for CloudWatch access and apply it to the worker nodes.
++
+[source,shell]
+----
+cat <<EoF > /tmp/eks-logs-policy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams",
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": "*",
+            "Effect": "Allow"
+        }
+    ]
+}
+EoF
+
+aws iam put-role-policy --role-name $ROLE_NAME --policy-name Logs-Policy-For-Worker --policy-document file://tmp/eks-logs-policy.json
+----
++
+Steo 3:: Validate that the policy has been attached to the worker node role.
++
+[source,shell]
+----
+aws iam get-role-policy --role-name $ROLE_NAME --policy-name Logs-Policy-For-Worker
+----
++
+Expected Output:
++
+[.output]
+----
+{
+    "RoleName": "eksctl-petstore-nodegroup-ng-d389-NodeInstanceRole-1E8S9YL9EQ5QI", 
+    "PolicyDocument": {
+        "Version": "2012-10-17", 
+        "Statement": [
+            {
+                "Action": [
+                    "logs:DescribeLogGroups", 
+                    "logs:DescribeLogStreams", 
+                    "logs:CreateLogGroup", 
+                    "logs:CreateLogStream", 
+                    "logs:PutLogEvents"
+                ], 
+                "Resource": "*", 
+                "Effect": "Allow"
+            }
+        ]
+    }, 
+    "PolicyName": "Logs-Policy-For-Worker"
+}
+----
++
+Step 4:: Now we can deploy Fluentd. To get started, navigate to the folder for this module and open the `fluentd.yaml` in the Cloud9 IDE. Although it is a large manifest for deploying Fluentd as a *DaemonSet*, i.e. one pod per worker node, the log agent configuration is located in the Kubernetes *ConfigMap* as shown below:
++
+[source,yaml]
+----
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+  namespace: kube-system
+  labels:
+    k8s-app: fluentd-cloudwatch
+data:
+  fluent.conf: |
+    @include containers.conf
+    @include systemd.conf
+
+    <match fluent.**>
+      @type null
+    </match>
+  containers.conf: |
+    <source>
+      @type tail
+      @id in_tail_container_logs
+      @label @containers
+      path /var/log/containers/*.log
+      pos_file /var/log/fluentd-containers.log.pos
+      tag *
+      read_from_head true
+      <parse>
+        @type json
+        time_format %Y-%m-%dT%H:%M:%S.%NZ
+      </parse>
+    </source>
+
+    <label @containers>
+      <filter **>
+        @type kubernetes_metadata
+        @id filter_kube_metadata
+      </filter>
+
+      <filter **>
+        @type record_transformer
+        @id filter_containers_stream_transformer
+        <record>
+          stream_name ${tag_parts[3]}
+        </record>
+      </filter>
+
+      <match **>
+        @type cloudwatch_logs
+        @id out_cloudwatch_logs_containers
+        region "#{ENV.fetch('REGION')}"
+        log_group_name "/eks/#{ENV.fetch('CLUSTER_NAME')}/containers"
+        log_stream_name_key stream_name
+        remove_log_stream_name_key true
+        auto_create_stream true
+        <buffer>
+          flush_interval 5
+          chunk_limit_size 2m
+          queued_chunks_limit_size 32
+          retry_forever true
+        </buffer>
+      </match>
+    </label>
+  systemd.conf: |
+    <source>
+      @type systemd
+      @id in_systemd_kubelet
+      @label @systemd
+      filters [{ "_SYSTEMD_UNIT": "kubelet.service" }]
+      <entry>
+        field_map {"MESSAGE": "message", "_HOSTNAME": "hostname", "_SYSTEMD_UNIT": "systemd_unit"}
+        field_map_strict true
+      </entry>
+      path /run/log/journal
+      pos_file /var/log/fluentd-journald-kubelet.pos
+      read_from_head true
+      tag kubelet.service
+    </source>
+
+    <source>
+      @type systemd
+      @id in_systemd_kubeproxy
+      @label @systemd
+      filters [{ "_SYSTEMD_UNIT": "kubeproxy.service" }]
+      <entry>
+        field_map {"MESSAGE": "message", "_HOSTNAME": "hostname", "_SYSTEMD_UNIT": "systemd_unit"}
+        field_map_strict true
+      </entry>
+      path /run/log/journal
+      pos_file /var/log/fluentd-journald-kubeproxy.pos
+      read_from_head true
+      tag kubeproxy.service
+    </source>
+
+    <source>
+      @type systemd
+      @id in_systemd_docker
+      @label @systemd
+      filters [{ "_SYSTEMD_UNIT": "docker.service" }]
+      <entry>
+        field_map {"MESSAGE": "message", "_HOSTNAME": "hostname", "_SYSTEMD_UNIT": "systemd_unit"}
+        field_map_strict true
+      </entry>
+      path /run/log/journal
+      pos_file /var/log/fluentd-journald-docker.pos
+      read_from_head true
+      tag docker.service
+    </source>
+
+    <label @systemd>
+      <filter **>
+        @type record_transformer
+        @id filter_systemd_stream_transformer
+        <record>
+          stream_name ${tag}-${record["hostname"]}
+        </record>
+      </filter>
+
+      <match **>
+        @type cloudwatch_logs
+        @id out_cloudwatch_logs_systemd
+        region "#{ENV.fetch('REGION')}"
+        log_group_name "/eks/#{ENV.fetch('CLUSTER_NAME')}/systemd"
+        log_stream_name_key stream_name
+        auto_create_stream true
+        remove_log_stream_name_key true
+        <buffer>
+          flush_interval 5
+          chunk_limit_size 2m
+          queued_chunks_limit_size 32
+          retry_forever true
+        </buffer>
+      </match>
+    </label>
+---
+----
++
+Step 5:: Apply the manifest to create the fluentd DaemonSet.
++
+NOTE: Ensure that you are working in this modules directory. i.e. `~/environment/aws-modernization-workshop/modules/monitor-application/eks`
++
+[source,shell]
+----
+kubectl apply -f fluentd.yml
+----
++
+Step 6:: We can confirm that all the pods chnage to `Running` status by executing the following command:
++
+[source,shell]
+----
+kubectl get pods -w --namespace=kube-system
+----
++
+Ecpected Output:
++
+[.output]
+----
+NAME                       READY   STATUS    RESTARTS   AGE
+aws-node-k75kc             1/1     Running   0          4h
+aws-node-w9d7n             1/1     Running   0          4h
+coredns-6fdd4f6856-mvlst   1/1     Running   0          4h6m
+coredns-6fdd4f6856-xzc9x   1/1     Running   0          4h6m
+fluentd-cloudwatch-55p6x   1/1     Running   0          21s
+fluentd-cloudwatch-sn25n   1/1     Running   0          21s
+kube-proxy-hgmvw           1/1     Running   0          4h
+kube-proxy-r84rb           1/1     Running   0          4h
+----
++
+Step 7:: Now we can view the CloudWatch log streams for the containers in our `kube-system`. To do this, open a browser tab and navigate to the link:https://us-west-2.console.aws.amazon.com/cloudwatch/[CloudWatch Console] and click *Logs* in the navigation pane. All the CloudWatch Log Groups will be displayed.
++
+Step 8:: In the *Filter:* box, enter `eks` and press `[ENTER]` to filter the Log Group for our EKS cluster. Click on the `/eks/petstore/containers` Log Group.
++
+image:cw-logs.png[Log Group]
++
+Now we can see all the logs for the various containers in our `kube-system`.
++
+image:cw-streams.png[CloudWatch Streams]
+
+This conludes the *Application Monitoring* module. Please contonue to the next module.

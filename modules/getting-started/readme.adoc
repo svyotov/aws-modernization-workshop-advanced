@@ -56,7 +56,7 @@ Now we want to clone the repository that contains all the content and files you 
 ----
 cd ~/environment
 
-git clone https://github.com/darkreapyre/aws-modernization-workshop.git
+git clone https://github.com/darkreapyre/aws-modernization-workshop-advanced.git
 ----
 
 === Installing 3rd Party CLIs
@@ -68,9 +68,7 @@ Step 1::
 Let's make a `bin` folder where these binaries will be stored and change our directory to the new location.
 [source,shell]
 ----
-mkdir ~/bin
-
-cd ~/bin
+mkdir ~/bin && cd ~/bin
 ----
 
 Step 2::

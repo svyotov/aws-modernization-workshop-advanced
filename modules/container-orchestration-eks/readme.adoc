@@ -45,7 +45,7 @@ Step 1:: In the Cloud9 IDE `terminal`, switch to this modules' working directory
 +
 [source,shell]
 ----
-cd ~/environment/aws-modernization-workshop/modules/container-orchestration-eks
+cd ~/environment/aws-modernization-workshop-advanced/modules/container-orchestration-eks
 ----
 +
 Step 2:: Open the `petstore-eks-manifest.yaml` file by double clicking the filename in the lefthand navigation of the Cloud9 IDE.

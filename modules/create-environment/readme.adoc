@@ -18,7 +18,7 @@
 
 === Workshop Introduction
 
-Welcome to the workshop on AWS Digital Modernization. The steps outlined below will allow you to quickly create an environment that will allow you to work with the instructions contained througout this workshop.
+Welcome to the _Advanced_ workshop on AWS Digital Modernization. The steps outlined below will allow you to quickly create an environment that will allow you to work with the instructions contained througout this workshop.
 
 NOTE: If you do not have access to an AWS Account, please see the AWS Instructor.
 

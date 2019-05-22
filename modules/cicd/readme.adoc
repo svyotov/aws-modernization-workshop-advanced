@@ -44,7 +44,7 @@ Step 1:: In the Cloud9 IDE `terminal`, navigate to this modules working director
 +
 [source,shell]
 ----
-cd ~/environment/aws-modernization-workshop/modules/cicd/
+cd ~/environment/aws-modernization-workshop-advanced/modules/cicd/
 ----
 +
 Step 2:: Next we wil create the necessary Service Roles using the CloudFormation template in this modules wotking directory by running the follopwing AWS CLI command:
@@ -225,7 +225,7 @@ Step 1:: Let's get started setting up the lambda function by first ensuring we a
 +
 [source,shell]
 ----
-cd ~/environment/aws-modernization-workshop/modules/cicd/lambda-eks
+cd ~/environment/aws-modernization-workshop-advanced/modules/cicd/lambda-eks
 ----
 +
 Step 2:: Next we will add some of our EKS parameters to the lambda configuration, by running the following commands

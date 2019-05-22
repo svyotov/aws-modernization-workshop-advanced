@@ -36,7 +36,7 @@ Before we get started in deploying Artifactory, lets first change to the module 
 
 [source,shell]
 ----
-cd ~/environment/aws-modernization-workshop/modules/artifactory
+cd ~/environment/aws-modernization-workshop-advanced/modules/artifactory
 ----
 
 To deploy JFrog Artifactory we'll be using CloudFormation.
@@ -192,10 +192,10 @@ However, to save some time, we have already done this for you on line `#8` of th
 [source,shell]
 ----
 cp {settings.xml,Dockerfile} \
-~/environment/aws-modernization-workshop/modules/containerize-application/
+~/environment/aws-modernization-workshop-advanced/modules/containerize-application/
 ----
 
-Your `Dockerfile` in the `~/environment/aws-modernization-workshop/modules/containerize-application/` direcrtory, should look as follows:
+Your `Dockerfile` in the `~/environment/aws-modernization-workshop-advanced/modules/containerize-application/` direcrtory, should look as follows:
 
 [source,shell]
 ----
@@ -255,7 +255,7 @@ Now that we have reconfigured our Docker containers we need to rebuild these ima
 
 [source,shell]
 ----
-cd ~/environment/aws-modernization-workshop/modules/containerize-application
+cd ~/environment/aws-modernization-workshop-advanced/modules/containerize-application
 ----
 
 Now that we are back in the *Containerize Application* folder we can rerun `docker-compose build` command.

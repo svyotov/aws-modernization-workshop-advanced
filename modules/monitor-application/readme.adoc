@@ -414,13 +414,13 @@ Step 2:: Add the healthcheck values to the `postgres` and `petstore` sections of
 +
 Step 3:: Save the `petstore-fargate-task-definition.json` file.
 +
-NOTE: There is a working `petstore-fargate-task-definition.json` in the `~/environment/aws-modernization-workshop/modules/monitor-application/task-definition` folder within this repository if you need a full example.
+NOTE: There is a working `petstore-fargate-task-definition.json` in the `~/environment/aws-modernization-workshop-advanced/modules/monitor-application/task-definition` folder within this repository if you need a full example.
 +
 Step 4:: Update the petstore task definition from the JSON file by running this command in your Cloud9 terminal:
 +
 [source,shell]
 ----
-aws ecs register-task-definition --cli-input-json file://~/environment/aws-modernization-workshop/modules/container-orchestration-ecs/petstore-fargate-task-definition.json
+aws ecs register-task-definition --cli-input-json file://~/environment/aws-modernization-workshop-advanced/modules/container-orchestration-ecs/petstore-fargate-task-definition.json
 ----
 +
 Step 5:: Update the `petstore` service in the `petstore-workshop` cluster with the latest version of the `petstore` task definition by running the below command. This will also pull the latest version of the petstore_frontend container we uploaded previously.
@@ -461,7 +461,7 @@ Step 1:: In the Cloud9 IDE `terminal`, ensure you have switched to this modules'
 +
 [source,shell]
 ----
-cd ~/environment/aws-modernization-workshop/modules/monitor-application/eks/
+cd ~/environment/aws-modernization-workshop-advanced/modules/monitor-application/eks/
 ----
 +
 Step 2:: Open the `liveness-app.yaml` file by double clicking the filename in the lefthand navigation of the Cloud9 IDE.
@@ -976,7 +976,7 @@ data:
 +
 Step 5:: Apply the manifest to create the fluentd DaemonSet.
 +
-NOTE: Ensure that you are working in this modules directory. i.e. `~/environment/aws-modernization-workshop/modules/monitor-application/eks`
+NOTE: Ensure that you are working in this modules directory. i.e. `~/environment/aws-modernization-workshop-advanced/modules/monitor-application/eks`
 +
 [source,shell]
 ----

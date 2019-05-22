@@ -48,7 +48,7 @@ Step 1:: Change to this modules directory by running:
 +
 [source,shell]
 ----
-cd ~/environment/aws-modernization-workshop/modules/container-orchestration-ecs
+cd ~/environment/aws-modernization-workshop-advanced/modules/container-orchestration-ecs
 ----
 +
 Step 2:: Deploy the CloudFormation template to create your new VPC
@@ -181,14 +181,14 @@ ACCOUNT_ID=$(aws ecr describe-repositories --repository-name petstore_frontend -
 
 echo ${ACCOUNT_ID}
 
-sed -i "s/<YourAccountID>/${ACCOUNT_ID}/" ~/environment/aws-modernization-workshop/modules/container-orchestration-ecs/petstore-fargate-task-definition.json
+sed -i "s/<YourAccountID>/${ACCOUNT_ID}/" ~/environment/aws-modernization-workshop-advanced/modules/container-orchestration-ecs/petstore-fargate-task-definition.json
 ----
 +
 Step 3:: Create a new task definition from the JSON file by running this command:
 +
 [source,shell]
 ----
-aws ecs register-task-definition --cli-input-json file://~/environment/aws-modernization-workshop/modules/container-orchestration-ecs/petstore-fargate-task-definition.json
+aws ecs register-task-definition --cli-input-json file://~/environment/aws-modernization-workshop-advanced/modules/container-orchestration-ecs/petstore-fargate-task-definition.json
 ----
 
 ===== Create the Petstore Service with Amazon ECS using Fargate

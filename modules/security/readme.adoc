@@ -36,7 +36,7 @@ Step 1:: Switch to the `terminal` your Cloud9 IDE environment change to this mod
 +
 [source,shell]
 ----
-cd ~/environment/aws-modernization-workshop/modules/security
+cd ~/environment/aws-modernization-workshop-advanced/modules/security
 ----
 +
 Step 3:: Deploy the CloudFormation template.
@@ -93,7 +93,7 @@ Step 1:: In the Cloud9 IDE, switch to the `terminal` ensurre you are working in 
 +
 [source,shell]
 ----
-cd ~/environment/aws-modernization-workshop/modules/security
+cd ~/environment/aws-modernization-workshop-advanced/modules/security
 ----
 +
 Step 2:: We will now download the `klar` binary and configure `execute` permissions, by running the following commands:

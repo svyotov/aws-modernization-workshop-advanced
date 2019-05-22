@@ -4,7 +4,7 @@ modules:
   modules_getting-started_readme:
     name: Getting Started
   modules_containerize-application_readme:
-    name: Modern Container Application
+    name: Modern Container Application on EKS
   modules_container-registry_readme:
     name: Container Registry
   modules_container-orchestration-ecs_readme:

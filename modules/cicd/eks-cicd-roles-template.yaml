@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Roles for CICD module of the aws-modernization-workshop.
+Description: Roles for CICD module of the aws-modernization-workshop-advanced.
 Metadata: {}
 Parameters: {}
 Resources:

@@ -3,7 +3,7 @@
 :imagesdir: ../../images
 :icons: font
 
-== Modern Container Application
+== Modern Container Application on EKS
 
 ****
 *Expected Outcome:*
@@ -31,7 +31,7 @@ Step 1:: To get started, switch to the `containerize-application` folder within 
 +
 [source,shell]
 ----
-cd ~/environment/aws-modernization-workshop/modules/containerize-application/
+cd ~/environment/aws-modernization-workshop-advanced/modules/containerize-application/
 ----
 
 Step 2:: Double-click to open the `Dockerfile` in the Cloud9 editor, using the *Environment* navigation pane, as shows below:
@@ -196,7 +196,7 @@ Finally, we will define our Pet Store application. Docker Compose supports build
 ==== Running the Application
 To run the application we will execute the following Docker Compose commands from the `terminal`.
 
-NOTE: Make sure the `terminal` session current working directory is `~/environment/aws-modernization-workshop/modules/containerize-application/` working directory.
+NOTE: Make sure the `terminal` session current working directory is `~/environment/aws-modernization-workshop-advanced/modules/containerize-application/` working directory.
 
 Step 1:: Run the database container in the background (`-d` or daemon flag). We don't need the database logs to clog our application logs.
 +

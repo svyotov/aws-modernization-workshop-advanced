@@ -87,7 +87,7 @@ Step 1:: From your Cloud9 IDE, let's launch the CloudFormation template:
 [source,shell]
 ----
 aws cloudformation create-stack \
-  --stack-name cicd --template-body=file://~/environment/aws-modernization-workshop/modules/cicd/pipeline.yaml \
+  --stack-name cicd --template-body=file://~/environment/aws-modernization-workshop-advanced/modules/cicd/pipeline.yaml \
   --capabilities CAPABILITY_IAM
 ----
 
@@ -118,7 +118,7 @@ Step 1:: When your Cloud9 environment was provisioned, it should also have autom
 
 [source,shell]
 ----
-cd ~/environment/aws-modernization-workshop/aws-modernization-workshop/
+cd ~/environment/aws-modernization-workshop-advanced/aws-modernization-workshop-advanced/
 ----
 
 Step 2:: Before we are able to clone our CodeCommit repo, we will need to configure our credentials allow HTTP:

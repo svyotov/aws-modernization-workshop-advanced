@@ -83,7 +83,7 @@ Step 1:: Switch to the tab where you have your Cloud9 `terminal` opened and chan
 +
 [source,shell]
 ----
-cd ~/environment/aws-modernization-workshop/modules/container-elasticity
+cd ~/environment/aws-modernization-workshop-advanced/modules/container-elasticity
 ----
 +
 Step 2:: Get the autoscaling group name of for the worker nodes, to do this run the following command:

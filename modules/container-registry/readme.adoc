@@ -35,7 +35,7 @@ CloudFormation creates the following resources:
 Step 1:: Using the Cloud9 `terminal`, change to this modules' directory by running:
 [source,shell]
 ----
-cd ~/environment/aws-modernization-workshop/modules/container-registry
+cd ~/environment/aws-modernization-workshop-advanced/modules/container-registry
 ----
 
 Step 2:: Deploy the CloudFormation template using the `aws cli` tool. 

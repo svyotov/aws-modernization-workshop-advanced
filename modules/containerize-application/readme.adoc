@@ -8,7 +8,6 @@
 ****
 *Expected Outcome:*
 
-* 100 level install of Docker Tooling.
 * Build the Pet Store application within a Container.
 * Deploy the Pet Store application to a Wildfly based Application Server.
 

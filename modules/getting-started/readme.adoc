@@ -29,7 +29,9 @@ image::cloud9-launch.png[Ope IDE]
 The first step is to update the `AWS CLI` and `pip` packages, as well as other pre-installed packages. Open a new `terminal` by pressing the combination keys `[alt + t]` (Windows/Linux) or `[⌥ + t]` (Mac OS). Once the new `terminal` is open, run the following commands:
 [source,shell]
 ----
-sudo yum update -y && pip install --upgrade --user awscli pip
+sudo yum update -y && \
+sudo yum install -y jq gettext && \
+pip install --upgrade --user awscli pip
 
 exec $SHELL
 ----

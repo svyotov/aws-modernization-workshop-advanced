@@ -22,10 +22,9 @@ Cloud9 IDE
 === Introduction
 The Pet Store application is a Java 7 based application that runs on top of the Wildfly (JBoss) application server. The application is built using Maven. We will walk through the steps to build the application using a Maven container then deploy our WAR file to the Wildfly container. We will be using multi-stage builds to facilitate creating a minimal docker container.
 
-==== Building the Dockerfile
+Then we will push the container to link:https://aws.amazon.com/ecr/[Amazon Elastic Container Registry (ECR)] and finally deploy it to link:http://aws.amazon.com/eks/[mazon Elastic Container Service for Kubernetes (Amazon EKS)].
 
-
-image:docker-image.png[Docker Image]
+=== Building the Dockerfile
 
 Step 1:: To get started, switch to the `containerize-application` folder within this repository.
 +
@@ -33,289 +32,423 @@ Step 1:: To get started, switch to the `containerize-application` folder within 
 ----
 cd ~/environment/aws-modernization-workshop-advanced/modules/containerize-application/
 ----
-
++
 Step 2:: Double-click to open the `Dockerfile` in the Cloud9 editor, using the *Environment* navigation pane, as shows below:
 +
 image::dockerfile-nav.png[Dockerfile]
-
-==== Reviewing the Dockerfile
-
-image:dockerfile-layers.png[Dockerfile layers]
-
-The first `stage` of our `Dockerfile` will be to build the application. We will use the `maven:3.5-jdk-7` container from Docker Hub as our base image. The first `stage` of our `Dockerfile` will need to copy the code into the container, install the dependencies, then build the application using Maven.
-
-The second `stage` of our `Dockerfile` will be to build our Wildfly application server. We will need to copy the WAR file we created in the first stage to the second stage. The WAR file is built to `/usr/src/app/target/applicationPetstore.war` in the first stage. We will instruct `docker` to copy that WAR file to the `/opt/jboss/wildfly/standalone/deployments/applicationPetstore.war` in the new `stage`. We will also have `docker` copy the `standalone.xml` file to the proper location `/opt/jboss/wildfly/standalone/configuration/standalone.xml`. Wildfly will deploy that application on boot. 
-
-The jPetstore application requires the PostrgeSQL driver. We install that during image build by declaring a `RUN` statement in the `Dockerfile` like the one below.
-
-[.output]
-....
-# install postgresql support
-RUN mkdir -p $JBOSS_HOME/modules/system/layers/base/org/postgresql/main
-COPY ./postgresql $JBOSS_HOME/modules/system/layers/base/org/postgresql/main
-RUN /bin/sh -c '$JBOSS_HOME/bin/standalone.sh &' \
-  && sleep 10 \
-  && $JBOSS_HOME/bin/jboss-cli.sh --connect --command="/subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql, driver-class-name=org.postgresql.Driver)" \
-  && $JBOSS_HOME/bin/jboss-cli.sh --connect --command=:shutdown \
-  && rm -rf $JBOSS_HOME/standalone/configuration/standalone_xml_history/ \
-  && rm -rf $JBOSS_HOME/standalone/log/*
-....
-
-Let's now review the full `Dockerfile` step for step and walk through the result. The first stage will be based off our `build tools` container, in this case that is maven. This container could be a container within your organization that houses all the tools your development team needs. We alias this first stage as the `build` stage.
-
-[.output]
-....
-FROM maven:3.5-jdk-7 AS build
-....
-
-Next we are going to install the dependencies. We do this ahead of time so that we can leverage the Docker build cache to increase the speed of build times. To accomplish this we copy the `pom.xml` and install the dependencies. We then copy our application code and build the application. This enables developers to iterate on their code without having to install dependencies each time.
-
-[.output]
-....
-# set the working directory
-WORKDIR /usr/src/app
-
-# copy just the pom.xml
-COPY ./app/pom.xml /usr/src/app/pom.xml
-
-# just install the dependencies for caching
-RUN mvn dependency:go-offline
-....
-
-Finally, we build the application using `maven`.
-
-[.output]
-....
-# copy the application code
-COPY ./app /usr/src/app
-
-# package the application
-RUN mvn package -Dmaven.test.skip=true
-....
-
-Next, in the same `Dockerfile` we create a new stage called `application.` Then from the `build` stage, we copy the WAR file we compiled to the Wildfly deployments folder. Wildfly will deploy this WAR on boot. We then expose port `8080` for our application and port `9990` for Wildfly management. We then set up the prerequisites for the `ENTRYPOINT` script to start the application.
-
-[.output]
-....
-# create our Wildfly based application server
-FROM jboss/wildfly:11.0.0.Final AS application
-
-# install postgresql support
-RUN mkdir -p $JBOSS_HOME/modules/system/layers/base/org/postgresql/main
-COPY ./postgresql $JBOSS_HOME/modules/system/layers/base/org/postgresql/main
-RUN /bin/sh -c '$JBOSS_HOME/bin/standalone.sh &' \
-  && sleep 10 \
-  && $JBOSS_HOME/bin/jboss-cli.sh --connect --command="/subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql, driver-class-name=org.postgresql.Driver)" \
-  && $JBOSS_HOME/bin/jboss-cli.sh --connect --command=:shutdown \
-  && rm -rf $JBOSS_HOME/standalone/configuration/standalone_xml_history/ \
-  && rm -rf $JBOSS_HOME/standalone/log/*
-
-# copy war file from build layer to application layer
-COPY --from=build /usr/src/app/target/applicationPetstore.war /opt/jboss/wildfly/standalone/deployments/applicationPetstore.war
-
-# install nc for entrypoint script and copy the entrypoint script
-USER root
-RUN yum install nc -y
-USER jboss
-COPY ./docker-entrypoint.sh /opt/jboss/docker-entrypoint.sh
-
-# copy our configuration
-COPY ./standalone.xml /opt/jboss/wildfly/standalone/configuration/standalone.xml
-
-# expose the application port and the management port
-EXPOSE 8080 9990
-
-# run the application
-ENTRYPOINT [ "/opt/jboss/wildfly/bin/standalone.sh" ]
-CMD [ "-b", "0.0.0.0", "-bmanagement", "0.0.0.0" ]
-....
-
-==== Defining the Application
-
-For this workshop we use the tool `docker-compose` to simulate a full-stack development environment that consists of multiple containers communicating with each other. 
-
-Step 1:: Download the docker-compose binary by using the `terminal`.
++
+The first stage of our Dockerfile will be to build the application. We will use the `maven:3.5-jdk-7` container from Docker Hub as our base image. The first stage of our Dockerfile will need to copy the code into the container, install the dependencies, then build the application using Maven.
++
+The second stage of our Dockerfile will be to build our Wildfly application server. We will need to copy the WAR file we created in the first stage to the second stage. The WAR file is built to `/usr/src/app/target/applicationPetstore.war` in the first stage. We will instruct docker to copy that WAR file to the `/opt/jboss/wildfly/standalone/deployments/applicationPetstore.war` in the new stage. We will also have docker copy the `standalone.xml` file to the proper location `/opt/jboss/wildfly/standalone/configuration/standalone.xml`. Wildfly will deploy that application on boot.
++
+The *jPetstore* application requires the *PostrgeSQL* driver. We install that during image build by declaring a `RUN` statement in the Dockerfile.
++
+Step 3:: To build the application we will execute the following Docker commands from the `terminal` in our CLoud9 IDE. Make sure the terminal session current working directory is `~/environment/aws-modernization-workshop-advanced/modules/containerize-application/` working directory, by running the following command in the `terminal`.
++
 [source,shell]
 ----
-sudo curl -kLo ~/bin/docker-compose https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)
-
-sudo chmod +x ~/bin/docker-compose
-
-exec $SHELL
+docker build -t containerize-application_petstore:latest .
+----
++
+NOTE: The container build should take around 15 minutes complete.
++
+Step 4:: As mentioned, the *jPetstore* application requires a databse. We will use the official *PostgreSQL* image available from Docker Hub. The following command will pull the official image.
++
+[source,shell]
+----
+docker pull postgres:9.6
+----
++
+Step 5:: We can review that we have the all the neccessary container images by runnming the following command:
++
+[source,shell]
+----
+docker images
+----
++
+Expected Output:
++
+[.output]
+----
+REPOSITORY                          TAG                 IMAGE ID            CREATED             SIZE
+containerize-application_petstore   latest              7582d2850ea5        6 minutes ago       804MB
+postgres                            9.6                 8d9572468d97        12 days ago         230MB
+lambci/lambda                       python3.6           420212d009b3        5 weeks ago         1.03GB
+lambci/lambda                       python2.7           7a436931435e        5 weeks ago         901MB
+lambci/lambda                       nodejs4.3           c0914066d9a8        5 weeks ago         931MB
+lambci/lambda                       nodejs6.10          74b405a65ed4        5 weeks ago         946MB
+lambci/lambda                       nodejs8.10          edf1f613772c        5 weeks ago         960MB
+jboss/wildfly                       11.0.0.Final        a12aa93a45f7        3 months ago        700MB
+maven                               3.5-jdk-7           5f03adaf2bbf        7 months ago        483MB
 ----
 
-Next, we need to define how our application will run. We do this by defining the structure of our application and it's dependencies in a `docker-compose.yml` file. This file contains the complete environment required for our application. 
+=== Push the aplication containers to ECR
+Next, we're going to take our already containerized applications and push them to link:https://aws.amazon.com/ecr/[Amazon Elastic Container Registry (ECR)]. Amazon ECR is a fully-managed Docker container registry that makes it easy for developers to store, manage, and deploy Docker container images. Amazon ECR is integrated with Amazon Elastic Container Service (ECS), simplifying your development to production workflow.
 
-Step 2:: Open the file called `docker-compose.yml`. Let's review the contents. To start your file should look like this:
+==== Deploy ECR Repositories
+We will first deploy our CloudFormation template which configures our ECR Repositories.
+
+****
+CloudFormation creates the following resources:
+
+* `PetStorePostgreSQLRepository` - ECR Respository for PostgresSQL containers.
+* `PetStoreFrontendRepository` - ECR Repository for the front-end containers.
+****
+
+Step 1:: Using the Cloud9 IDE `terminal`, deploy the CloudFormation template using the `aws cli` tool. 
+[source,shell]
+----
+aws cloudformation create-stack \
+  --stack-name "petstore-ecr" \
+  --template-body file://petstore-ecr-cf-resources.yaml \
+  --capabilities CAPABILITY_NAMED_IAM
+----
+
+Step 2:: Wait for the Template to finish deploying.
+
+[source,shell]
+----
+until [[ `aws cloudformation describe-stacks --stack-name "petstore-ecr" --query "Stacks[0].[StackStatus]" --output text` == "CREATE_COMPLETE" ]]; do  echo "The stack is NOT in a state of CREATE_COMPLETE at `date`";   sleep 30; done && echo "The Stack is built at `date` - Please proceed"
+----
+
+===== Pushing the Petstore images to Amazon Elastic Container Registry (ECR)
+Now that we have created our ECR Repositories, we can push our Petstore images.
+
+Step 1:: Log into your Amazon ECR registry using the helper provided by the AWS CLI.
+
+[source,shell]
+----
+$(aws ecr get-login --no-include-email)
+----
+
+NOTE: Ignore any `WARNNING` messages.
+
+Step 2:: Use the AWS CLI to get information about the two Amazon ECR repositories that were created for you by the CloudFormation template. One repository will be for the Petstore PostgreSQL backend and the other will be for the Petstore web frontend.
++
+[source,shell]
+----
+aws ecr describe-repositories --repository-name petstore_postgres petstore_frontend
+----
++
+Expceted output:
 +
 [.output]
 ....
-version: '3.4'
-
-services:
+{
+    "repositories": [
+        {
+            "registryId": "123456789012",
+            "repositoryName": "petstore_postgres",
+            "repositoryArn": "arn:aws:ecr:us-west-2:123456789012:repository/petstore_postgres",
+            "createdAt": 1533757748.0,
+            "repositoryUri": "123456789012.dkr.ecr.us-west-2.amazonaws.com/petstore_postgres"
+        },
+        {
+            "registryId": "123456789012",
+            "repositoryName": "petstore_frontend",
+            "repositoryArn": "arn:aws:ecr:us-west-2:123456789012:repository/petstore_frontend",
+            "createdAt": 1533757751.0,
+            "repositoryUri": "123456789012.dkr.ecr.us-west-2.amazonaws.com/petstore_frontend"
+        }
+    ]
+}
 ....
 +
-The next section defines the PostgreSQL service. The PostgreSQL service will run our database. We will use the official PostgreSQL image available from Docker Hub. Next, we will map the PostgreSQL port `5432` to the our machine port for easy access. Finally, we will define a few environment variables to configure our instance.
+Step 3:: Tag the local docker images with the locations of the remote ECR repositories we created using our CloudFormation template. 
++
+[source,shell]
+----
+docker tag postgres:9.6 $(aws ecr describe-repositories --repository-name petstore_postgres --query=repositories[0].repositoryUri --output=text):latest
+
+docker tag containerize-application_petstore:latest $(aws ecr describe-repositories --repository-name petstore_frontend --query=repositories[0].repositoryUri --output=text):latest
+----
++
+Step 4:: Once the images have been tagged, push them to the remote repository.
++
+[source,shell]
+----
+docker push $(aws ecr describe-repositories --repository-name petstore_postgres --query=repositories[0].repositoryUri --output=text):latest
+
+docker push $(aws ecr describe-repositories --repository-name petstore_frontend --query=repositories[0].repositoryUri --output=text):latest
+----
++
+You should see the Docker images being pushed with an output similar to this:
 +
 [.output]
 ....
-version: '3.4'
+The push refers to repository [<REDACTED>.dkr.ecr.us-west-2.amazonaws.com/petstore_postgres]
+7856d1f55b98: Pushed
+a125032aca95: Pushed
+fcfc309521a9: Pushed
+4c4e9f97ac56: Pushed
+109402c6a817: Pushed
+6663c6c0d308: Pushed
+ed4da41a79a9: Layer already exists
+7c050956ab95: Layer already exists
+c6fcee3b341c: Layer already exists
+998e6abcfae7: Layer already exists
+df9515382700: Layer already exists
+0fae9a7d0574: Layer already exists
+add4404d0b51: Layer already exists
+cdb3f9544e4c: Layer already exists
+latest: digest: sha256:ca39b6107978303706aac0f53120879afcd0d4b040ead7f19e8581b81c19ecea size: 3243
+....
 
-services:
+=== Deploying to EKS
+With the images pushed to Amazon ECR we are ready to deploy them to our orchestrator. Next, we will show you how to leverage link:https://aws.amazon.com/eks/[Amazon EKS] to orchestrate our containers into production.
 
-  postgres:
-    image: postgres:9.6
+image:eks.png[ECS]
+
+==== Getting Started with Amazon Elastic Container Service for Kubernetes (EKS)
+
+Before we get started, here are some terms you need to understand in order to deploy your application when creating your first Amazon EKS cluster.
+
+[options="header"]
+|=======================
+| Object | Cluster
+| *Cluster* | A group of EC2 instances that are all running `kubelet` which connects into the master control plane.
+| *Deployment* | Configuration file that declares how a container should be deployed including how many `replicas` what the `port` mapping should be and how it is `labeled`.
+| *Service* | Configuration file that declares the ingress into the container, these can be used to create Load Balancers automatically.
+|=======================
+
+===== Amazon EKS and Kubernetes Manifests
+
+To use Amazon EKS or any Kubernetes cluster you must write a manifest or a config file, these config files are used to declaritively document what is needed to deploy an individual application. More information can be found https://kubernetes.io/docs/concepts/workloads/controllers/deployment/[here].
+
+Step 1:: Open the `petstore-eks-manifest.yaml` file by double clicking the filename in the lefthand navigation of the Cloud9 IDE. The file has the following contents:
++
+[source,yaml]
+----
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Namespace
+  metadata:
+    name: petstore
+
+- kind: PersistentVolume
+  apiVersion: v1
+  metadata:
+    name: postgres-pv-volume
+    namespace: petstore
+    labels:
+      type: local
+  spec:
+    storageClassName: gp2
+    capacity:
+      storage: 20Gi
+    accessModes:
+      - ReadWriteOnce
+    hostPath:
+      path: "/mnt/data"
+
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: postgres-pv-claim
+    namespace: petstore
+  spec:
+    storageClassName: gp2
+    accessModes:
+      - ReadWriteMany
+    resources:
+      requests:
+        storage: 20Gi
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: postgres
+    namespace: petstore
+  spec:
     ports:
-      - 5432:5432
-    environment:
-      - 'POSTGRES_DB=petstore'
-      - 'POSTGRES_USER=admin'
-      - 'POSTGRES_PASSWORD=password'
-....
-Step 3:: Define the application.
-+
-Finally, we will define our Pet Store application. Docker Compose supports building containers as well, so we will use a special syntax for defining this container. In our `yaml` file we will create a new service called `petstore` and configure our build configuration. Next, will add a `depends_on` config so that the `petstore` container boots after our `postgres` container. Similar to our `postgres` ports we will map port `8080` to our machine for easy access. Now we will use some environment variables to configure our database with the application.
-+
-[.output]
-....
-  petstore:
-    build: ./
-    depends_on:
-      - postgres
+    - port: 5432
+    selector:
+      app: postgres
+    clusterIP: None
+
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: postgres
+    namespace: petstore
+  spec:
+    selector:
+      matchLabels:
+        app: postgres
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          app: postgres
+      spec:
+        containers:
+        - image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_postgres:latest
+          name: postgres
+          env:
+          - name: POSTGRES_PASSWORD
+            value: password
+          - name: POSTGRES_DB
+            value: petstore
+          - name: POSTGRES_USER
+            value: admin
+          ports:
+          - containerPort: 5432
+            name: postgres
+          volumeMounts:
+          - name: postgres-persistent-storage
+            mountPath: /var/lib/postgresql/data
+            subPath: petstore
+        volumes:
+        - name: postgres-persistent-storage
+          persistentVolumeClaim:
+            claimName: postgres-pv-claim
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: frontend
+    namespace: petstore
+  spec:
+    selector:
+      app: frontend
     ports:
-      - 8080:8080
-    environment:
-      - 'DB_URL=jdbc:postgresql://postgres:5432/petstore?ApplicationName=applicationPetstore'
-      - 'DB_HOST=postgres'
-      - 'DB_PORT=5432'
-      - 'DB_NAME=petstore'
-      - 'DB_USER=admin'
-      - 'DB_PASS=password'
-....
+    - port: 80
+      targetPort: http-server
+      name: http
+    - port: 9990
+      targetPort: wildfly-cord
+      name: wildfly-cord
+    type: LoadBalancer
 
-==== Running the Application
-To run the application we will execute the following Docker Compose commands from the `terminal`.
-
-NOTE: Make sure the `terminal` session current working directory is `~/environment/aws-modernization-workshop-advanced/modules/containerize-application/` working directory.
-
-Step 1:: Run the database container in the background (`-d` or daemon flag). We don't need the database logs to clog our application logs.
+- apiVersion: apps/v1beta1
+  kind: Deployment
+  metadata:
+    name: frontend
+    namespace: petstore
+    labels:
+      app: frontend
+  spec:
+    replicas: 2
+    selector:
+      matchLabels:
+        app: frontend
+    template:
+      metadata:
+        labels:
+          app: frontend
+      spec:
+        initContainers:
+        - name: init-frontend
+          image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_postgres:latest
+          command: ['sh', '-c',
+                    'until pg_isready -h postgres.petstore.svc -p 5432;
+                    do echo waiting for database; sleep 2; done;']
+        containers:
+        - name: frontend
+          image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_frontend:latest
+          resources:
+            requests:
+              memory: "512m"
+              cpu: "512m"
+          ports:
+          - name: http-server
+            containerPort: 8080
+          - name: wildfly-cord
+            containerPort: 9990
+          env:
+          - name: DB_URL
+            value: "jdbc:postgresql://postgres.petstore.svc:5432/petstore?ApplicationName=applicationPetstore"
+          - name: DB_HOST
+            value: postgres.petstore.svc
+          - name: DB_PORT
+            value: "5432"
+          - name: DB_NAME
+            value: petstore
+          - name: DB_USER
+            value: admin
+          - name: DB_PASS
+            value: password
+----
++
+NOTE: Amazon EKS clusters that were created prior to Kubernetes version 1.11 were not created with any storage classes. Since we are running the version `1.12`, the default `StorageClass` has already been set to link:https://aws.amazon.com/ebs/[Amazon Elastic Block Store (EBS)]. Therefore there is no `StorageClass` definition int he `petstore-eks-manifest.yaml` file.
++
+Step 2:: Close the `petstore-eks-manifest.yaml`. Run the following commands in the Cloud9 IDE `terminale` to replace the *<YourAccountID>* placeholders with your AWS Account ID.
 +
 [source,shell]
 ----
-docker-compose up -d postgres
+ACCOUNT_ID=$(aws sts get-caller-identity --output text --query 'Account')
+
+sed -i "s/<YourAccountID>/${ACCOUNT_ID}/" petstore-eks-manifest.yaml
 ----
 +
-Expected output:
+Step 3:: Apply your manifest by running this command in your Cloud9 IDE `terminal`:
++
+[source,shell]
+----
+kubectl apply -f petstore-eks-manifest.yaml
+----
++
+Expected Output:
 +
 [.output]
 ....
-Creating network "containerize-application_default" with the default driver
-Pulling postgres (postgres:9.6)...
-9.6: Pulling from library/postgres
-743f2d6c1f65: Pull complete
-5d307000f290: Pull complete
-29837b5e9b78: Pull complete
-3090df574038: Pull complete
-dc0b4463fa0e: Pull complete
-1fb834895f59: Pull complete
-59169bd605be: Pull complete
-a950d631bfe9: Pull complete
-de13bddd861e: Pull complete
-79d927ac55bb: Pull complete
-cd90504b6086: Pull complete
-1817e506cb08: Pull complete
-17ea2bd116a5: Pull complete
-d2d177a7b6ae: Pull complete
-Digest: sha256:97fcdcff5106e995661864bebf1fd6881553471b88e2afd6f98fbcb775bf66b7
-Status: Downloaded newer image for postgres:9.6
-Creating containerize-application_postgres_1 ... done
+namespace/petstore created
+persistentvolume/postgres-pv-volume configured
+persistentvolumeclaim/postgres-pv-claim created
+service/postgres created
+deployment.apps/postgres created
+service/frontend created
+deployment.apps/frontend created
 ....
 +
-Step 2:: Build out petstore application.
+Step 4:: As you can see above this manifest created and configured several components in your Kubernetes cluster, we've created a *namespace*, *persistentvolume*, *persistentvolumeclaim*, 2 *services*, and 2 *deployments*.
++
+[options="header"]
+|=======================
+| Primitive | Description
+| *Namespace* | Namespaces are meant to be virtual clusters within a larger pysical cluster.
+| *PersistentValue* | Persistent Volume (PV) is a piece of storage that has been provisioned by an administrator. _These are cluster wide resources._
+| *PersistentVolumeClaim* | Persistent Volume Claim (PVC) is a request for storage by a user.
+| *Service* | Service is an abstraction which defines a logical set of Pods and a policy by which to access them.
+| *Deployment* | Deployment controller provides declarative updates for Pods and ReplicaSets.
+|=======================
++
+Step 5:: Now that the scheduler knows that you want to run this application, it will find available *disk*, *cpu* and *memory* and will place the pods on *Worker Nodes*. Let's watch as they get provisioned.
 +
 [source,shell]
 ----
-docker-compose build petstore
+kubectl get pods --namespace petstore --watch
 ----
 +
-Expexcted output (_redacted for brevity)_:
+Expected Output:
 +
+[.output]
 ....
-Building petstore
-Step 1/19 : FROM maven:3.5-jdk-7 AS build
-3.5-jdk-7: Pulling from library/maven
-61be48634cb9: Pull complete
-fa696905a590: Pull complete
-b6dd2322bbef: Pull complete
-29bf78e897aa: Pull complete
-bb3e0783f7ce: Pull complete
-d642aa9d6e20: Pull complete
-f276ed06c956: Pull complete
-453e99a1d4cd: Pull complete
-a611c8ef8d0a: Pull complete
-fb5daf008876: Pull complete
-Digest: sha256:566898e199b1a9038b74786ac6ad740f3e6006d276c81cce8f32fcfe7d84912f
-Status: Downloaded newer image for maven:3.5-jdk-7
- ---> 5f03adaf2bbf
-Step 2/19 : WORKDIR /usr/src/app
- ---> Running in 7e4ee451b8b6
- ...
-Step 18/19 : ENTRYPOINT [ "/opt/jboss/docker-entrypoint.sh" ]
- ---> Running in 8a21e4479ffc
-Removing intermediate container 8a21e4479ffc
- ---> 9771a00b8677
-Step 19/19 : CMD [ "-b", "0.0.0.0", "-bmanagement", "0.0.0.0" ]
- ---> Running in a6f2156d6e58
-Removing intermediate container a6f2156d6e58
- ---> ac38f026e2e0
-
-Successfully built ac38f026e2e0
-Successfully tagged containerize-application_petstore:latest
+NAME                        READY     STATUS              RESTARTS   AGE
+frontend-869db5db6b-ht4h8   0/1       Init:0/1            0          3m
+frontend-869db5db6b-j5nfj   0/1       Init:0/1            0          3m
+postgres-678864b7-vs5zj     0/1       ContainerCreating   5          3m
 ....
 +
-Step 3:: Run the application container in the foreground and live stream the logs to stdout. If you hit an error hit `[Ctrl + C]`, make the necessary updates to the Dockerfile and re-build the container using step 2.
+Step 6:: Once the *STATUS* changes to *Running* for all 3 of your containers we can then load the services and navigate to the exposed application (you will need to `[ctrl + c]` since its watching).
 +
 [source,shell]
 ----
-docker-compose up petstore
+kubectl get services --namespace petstore -o wide
 ----
 +
-Expected output:
+Expected Output:
 +
+[.output]
 ....
-containerize-application_postgres_1 is up-to-date
-Creating containerize-application_petstore_1 ... done
-Attaching to containerize-application_petstore_1
-petstore_1  | PostgreSQL server postgres is ready on 5432 - starting wildfly /opt/jboss/wildfly/bin/standalone.sh
-petstore_1  | =========================================================================
-petstore_1  | 
-petstore_1  |   JBoss Bootstrap Environment
-petstore_1  | 
-petstore_1  |   JBOSS_HOME: /opt/jboss/wildfly
-petstore_1  | 
-petstore_1  |   JAVA: /usr/lib/jvm/java/bin/java
-petstore_1  | 
-petstore_1  |   JAVA_OPTS:  -server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true
-petstore_1  | 
-petstore_1  | =========================================================================
-petstore_1  | 
-petstore_1  | 18:53:35,766 INFO  [org.jboss.modules] (main) JBoss Modules version 1.6.1.Final
-petstore_1  | 18:53:36,268 INFO  [org.jboss.msc] (main) JBoss MSC version 1.2.7.SP1
-petstore_1  | 18:53:36,430 INFO  [org.jboss.as] (MSC service thread 1-2) WFLYSRV0049: WildFly Full 11.0.0.Final (WildFly Core 3.0.8.Final) starting
-petstore_1  | 18:53:36,510 INFO  [org.jboss.vfs] (MSC service thread 1-2) VFS000002: Failed to clean existing content for temp file provider of type temp. Enable DEBUG level log to find what caused this
-petstore_1  | 18:53:39,056 INFO  [org.jboss.as.controller.management-deprecated] (Controller Boot Thread) WFLYCTL0028: Attribute 'security-realm' in the resource at address '/core-service=management/management-interface=http-interface' is deprecated, and may be removed in future version. See the attribute description in the output of the read-resource-description operation to learn more about the deprecation.
-petstore_1  | 18:53:39,109 INFO  [org.wildfly.security] (ServerService Thread Pool -- 15) ELY00001: WildFly Elytron version 1.1.6.Final
-petstore_1  | 18:53:39,146 INFO  [org.jboss.as.controller.management-deprecated] (ServerService Thread Pool -- 27) WFLYCTL0028: Attribute 'security-realm' in the resource at address '/subsystem=undertow/server=default-server/https-listener=https' is deprecated, and may be removed in future version. See the attribute description in the output of the read-resource-description operation to learn more about the deprecation.
-petstore_1  | 18:53:39,483 INFO  [org.jboss.as.repository] (ServerService Thread Pool -- 14) WFLYDR0001: Content added at location /opt/jboss/wildfly/standalone/data/content/bb/fe95ab2a2cc839ea70e23db45f1015bfd87a43/content
-petstore_1  | 18:53:39,522 INFO  [org.jboss.as.server] (Controller Boot Thread) WFLYSRV0039: Creating http management service using socket-binding (management-http)
-petstore_1  | 18:53:39,563 INFO  [org.xnio] (MSC service thread 1-2) XNIO version 3.5.4.Final
-petstore_1  | 18:53:39,588 INFO  [org.xnio.nio] (MSC service thread 1-2) XNIO NIO Implementation Version 3.5.4.Final
+NAME       TYPE           CLUSTER-IP      EXTERNAL-IP                                                               PORT(S)                                     AGE
+frontend   LoadBalancer   10.100.20.251   ac7059d97a51611e88f630213e88d018-2093299179.us-west-2.elb.amazonaws.com   80:30327/TCP,443:32177/TCP,9990:30543/TCP   6m
+postgres   ClusterIP      None            <none>                                                                    5432/TCP                                    6m
 ....
 +
-Step 4:: To preview the application you will need to click *Preview* from the top menu of the Cloud9 environment, then *Preview Running Application*. This will open a new window and pre-populate the full URL to your preview domain.
-+
-image::preview.png[preview]
-+
-Now that we have confirmed that the container is functioning, press `[Ctrl + c]` in the `terminal` to stop the running container and clouse the *Preview* tab.
+Step 7:: Here we can see that we're exposing the *frontend* using an ELB, which is available at the *EXTERNAL-IP* field. Copy and paste this into a new browser tab.
 
-In the next module, we will look at how to lay the ground work for deploying the application into production, by creating an link:https://aws.amazon.com/ecr/[Amazon Elastic Container Registry (ECR)].
+Now that we have our containers deployed to Amazon EKS we can continue with the workshop and look at how to monitor the *Pet Store* application.

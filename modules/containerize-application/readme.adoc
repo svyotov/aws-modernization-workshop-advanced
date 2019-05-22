@@ -449,6 +449,8 @@ frontend   LoadBalancer   10.100.20.251   ac7059d97a51611e88f630213e88d018-20932
 postgres   ClusterIP      None            <none>                                                                    5432/TCP                                    6m
 ....
 +
-Step 7:: Here we can see that we're exposing the *frontend* using an ELB, which is available at the *EXTERNAL-IP* field. Copy and paste this into a new browser tab.
+Step 7:: Here we can see that we're exposing the *frontend* using an ELB, which is available at the *EXTERNAL-IP* field. Copy and paste this into a new browser tab. You should see the following web application:
++
+image:preview.png[Preview]
 
 Now that we have our containers deployed to Amazon EKS we can continue with the workshop and look at how to monitor the *Pet Store* application.

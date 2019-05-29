@@ -18,15 +18,37 @@
 
 === Workshop Introduction
 
-Welcome to the _Advanced_ workshop on AWS Digital Modernization. The steps outlined below will allow you to quickly create an environment that will allow you to work with the instructions contained througout this workshop.
+Welcome to the workshop on AWS Digital Modernization. The steps outlined below will allow you to quickly create an environment that will allow you to work with the instructions contained througout this workshop.
 
 NOTE: If you do not have access to an AWS Account, please see the AWS Instructor.
 
+=== Accessing your AWS Account
+
+Step 1:: Open the link:https://dashboard.eventengine.run/[Event Dashboard] in a web browser. 
++
+Step 2:: Enter the *Hash* key (_12 digit alphanumeric sequence_), in the provided field and click *Proceed*.
++
+NOTE: Make sure to keep hashes secret amongst persons.
++
+image::dashboard.png[Event Dashboard]
++
+Step 3:: Once the you have logged in, you will be greeted with the Team Dashboard. The AWS console can be access by clicking the *AWS Console* button in the top right.
++
+image:dashboard-user.png[User Dashboard]
++
+Step 4:: Take note of your access credentials for future use and click the *Open Console* button.
++
+image:console-login.png[Console Login]
++
+IMPORTANT: Remember to only use *us-west-2 (Oregon)* as your region!
+
+Now that you are logged into the *AWS Management Console* mfor you account, you can create the *Workshop Environment*.
+
 === Create the Workshop environment using CloudFormation
 
-Ensure that you have the appropriate permissions to provision resources in your AWS account. Then, log into the AWS account provided to you and click *Deplot to AWS*:
+Ensure that you have the appropriate permissions to provision resources in your AWS account. Then, log into the AWS account provided to you and click *Deploy to AWS*:
 
-image:deploy-to-aws.png["Deploy to AWS",width=128,link="https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create/review?stackName=AWSModernizationWorkshop&templateURL=https://s3-us-west-2.amazonaws.com/modernization-workshop-west-2/create-environment/templates/workshop_env_master.yaml"]
+image:deploy-to-aws.png["Deploy to AWS",align="left",link="https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?stackName=AWSModernizationWorkshop&templateURL=https://s3-us-west-2.amazonaws.com/modernization-workshop-west-2/create-environment/templates/workshop_env_master.yaml"]
 
 ****
 The CloudFormation Template will create the following resources in your AWS Account:

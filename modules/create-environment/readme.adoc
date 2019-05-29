@@ -48,7 +48,7 @@ Now that you are logged into the *AWS Management Console* mfor you account, you 
 
 Ensure that you have the appropriate permissions to provision resources in your AWS account. Then, log into the AWS account provided to you and click *Deploy to AWS*:
 
-image:deploy-to-aws.png["Deploy to AWS",align="left",link="https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?stackName=AWSModernizationWorkshop&templateURL=https://s3-us-west-2.amazonaws.com/modernization-workshop-west-2/create-environment/templates/workshop_env_master.yaml"]
+image:deploy-to-aws.png["Deploy to AWS",align="left",link="https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create/review?stackName=AWSModernizationWorkshop&templateURL=https://s3-us-west-2.amazonaws.com/modernization-workshop-west-2/create-environment/templates/workshop_env_master.yaml"]
 
 ****
 The CloudFormation Template will create the following resources in your AWS Account:

@@ -20,13 +20,29 @@ None
 15-20 minutes
 ****
 
-In order for you to succeed in this workshop, we need you to run through a few steps to finalize the configuration of your AWS Cloud9 environment. Your AWS Cloud9 environment is accessable from the link:https://us-west-2.console.aws.amazon.com/cloud9/home?region=us-west-2#[AWS Console]. Once you've accessed the console, open the `AWSModernizationWorkshop-IDEStack` IDE.
+In order for you to successfully complete the workshop, we need you to run through a few steps to finalize the configuration of your AWS Cloud9 environment. Your AWS Cloud9 environment is accessable from the link:https://us-west-2.console.aws.amazon.com/cloud9/home?region=us-west-2#[AWS Console]. Once you've accessed the console, open the `[red yellow-background]#<User Name>#-AWSModernizationWorkshop-IDEStack` IDE.
 
 image::cloud9-launch.png[Ope IDE]
 
+=== Update IAM User Name Settings
+
+Throughout the workshop you will be tagging and naming resources that you create, in order to differentiate your resources from the other workshop attendess. Since the majority of the AWS resources being created will leverage the *AWS CLI*, we will automatically create a variable to substiture the *IAM User* name into these commands. Create `USER_NAME` variable by running the following command, substituting your [red yellow-background]#<User Name>#
+
+WARNING: The parameter value for [red yellow-background]#<User Name># *MUST* be lower case!
+
+[source,shell]
+----
+export USER_NAME=<LOWER CASE IAM USER NAME>
+
+echo "export USER_NAME=$USER_NAME" >> ~/.bashrc
+
+source ~/.bashrc
+----
+
+
 === Update and install the necessary tools
 
-The first step is to update the `AWS CLI` and `pip` packages, as well as other pre-installed packages. Open a new `terminal` by pressing the combination keys `[alt + t]` (Windows/Linux) or `[⌥ + t]` (Mac OS). Once the new `terminal` is open, run the following commands:
+Now update the `AWS CLI` and `pip` packages, as well as other pre-installed packages. Open a new `terminal` by pressing the combination keys `[alt + t]` (Windows/Linux) or `[⌥ + t]` (Mac OS). Once the new `terminal` is open, run the following commands:
 [source,shell]
 ----
 sudo yum update -y && \
@@ -58,7 +74,7 @@ Now we want to clone the repository that contains all the content and files you 
 ----
 cd ~/environment
 
-git clone https://github.com/darkreapyre/aws-modernization-workshop-advanced.git
+git clone https://github.com/darkreapyre/aws-modernization-workshop.git
 ----
 
 === Installing 3rd Party CLIs
@@ -70,7 +86,9 @@ Step 1::
 Let's make a `bin` folder where these binaries will be stored and change our directory to the new location.
 [source,shell]
 ----
-mkdir ~/bin && cd ~/bin
+mkdir ~/bin
+
+cd ~/bin
 ----
 
 Step 2::
@@ -106,7 +124,7 @@ Step 2::
 Now that we have the key, let's launch the EKS Cluster.
 [source,shell]
 ----
-eksctl create cluster --full-ecr-access --name=petstore --nodes-min=2 --nodes-max=4
+eksctl create cluster --full-ecr-access --name=${USER_NAME}-petstore --nodes-min=2 --nodes-max=4
 ----
 
 Step 3::

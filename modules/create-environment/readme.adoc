@@ -59,8 +59,9 @@ The CloudFormation Template will create the following resources in your AWS Acco
 * `C9InstanceCR` - Cloud9 IDE Instance.
 ****
 
-WARNING: Remeber to add your *IAM User* credentials to individually separate your stack from other workshop attendees!
+WARNING: Remember to add your *IAM User* credentials in front of the *Stack name* in order to individually separate your stack from other workshop attendees! For example:
 
 image:tag.png[Username]
+
 
 Once the environment has been deployed, you may proceed with the additional configuration steps in the *Getting Started* module.

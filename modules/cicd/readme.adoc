@@ -75,14 +75,14 @@ until [[ `aws cloudformation describe-stacks --stack-name "${USER_NAME}-cicd-rol
 ==== Create Container Repository
 
 As we saw with the other examples in this workshop, we will need to store our demo applications' docker containers, so next we'll create an AWS ECR respository for the application contianers by running the following command:
-+ 
+
 [source,shell]
 ----
 aws ecr create-repository --repository-name ${USER_NAME}-cicd-repo --region us-west-2
 ----
-+
+
 Example Output:
-+
+
 [.output]
 ----
 {

@@ -123,7 +123,7 @@ Step 6:: We will now introduce a failure inside the docker runtime by sending th
 kubectl exec -it liveness-app -- /bin/kill -s SIGUSR1 1
 ----
 +
-Step 7:: After 15-20 seconds, re-run the `kubectl describe` command to view the `Events` output again and see what atctions the `kubelet` took.
+Step 7:: After [underline]#40 - 60# seconds, re-run the `kubectl describe` command to view the `Events` output again and see what atctions the `kubelet` took.
 +
 Expected Output:
 +
@@ -261,7 +261,7 @@ Step 7:: We will now check for the replicas that are available to serve traffic 
 +
 [source,shell]
 ----
- kubectl describe deployment readiness-deployment | grep Replicas:
+kubectl describe deployment readiness-deployment | grep Replicas:
 ----
 +
 Expected Output:
@@ -275,11 +275,12 @@ When the readiness probe for a pod fails, the endpoints controller removes the p
 +
 TIP: Our Liveness Probe example used `HTTP` request and Readiness Probe executed a command to check health of a pod. Same can be accomplished using a `TCP` request as described in the link:https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/[documentation].
 
-*Challenge Question:* _How would you restore the pod to Ready status?_
+*[blue]#Challenge Question:#* _How would you restore the pod to Ready status?_
 
 +++ <details><summary> +++
-Solution:
+*[green]#Solution:#*
 +++ </summary><div> +++
+
 Run the below command with the name of the pod to recreate the `/tmp/healthy file`. Once the pod passes the probe, it gets marked as ready and will begin to receive traffic again.
 
 [source,shell]
@@ -303,15 +304,15 @@ Step 1:: For this part of the module we will need to ensure that the `Role Name`
 +
 [source,shell]
 ----
-INSTANCE_PROFILE_NAME=$(aws iam list-instance-profiles | jq -r '.InstanceProfiles[].InstanceProfileName' | grep nodegroup)
+INSTANCE_PROFILE_NAME=$(aws iam list-instance-profiles | jq -r '.InstanceProfiles[].InstanceProfileName' | grep ${USER_NAME}-petstore-nodegroup)
 
 INSTANCE_PROFILE_ARN=$(aws iam get-instance-profile --instance-profile-name $INSTANCE_PROFILE_NAME | jq -r '.InstanceProfile.Arn')
 
 ROLE_NAME=$(aws iam get-instance-profile --instance-profile-name $INSTANCE_PROFILE_NAME | jq -r '.InstanceProfile.Roles[] | .RoleName')
 
-echo "export ROLE_NAME=${ROLE_NAME}" >> ~/.bash_profile
+echo "export ROLE_NAME=${ROLE_NAME}" >> ~/.bashrc
 
-echo "export INSTANCE_PROFILE_ARN=${INSTANCE_PROFILE_ARN}" >> ~/.bash_profile
+echo "export INSTANCE_PROFILE_ARN=${INSTANCE_PROFILE_ARN}" >> ~/.bashrc
 ----
 +
 Step 2:: Next we configure a policy for CloudWatch access and apply it to the worker nodes.
@@ -337,14 +338,14 @@ cat <<EoF > /tmp/eks-logs-policy.json
 }
 EoF
 
-aws iam put-role-policy --role-name $ROLE_NAME --policy-name Logs-Policy-For-Worker --policy-document file:///tmp/eks-logs-policy.json
+aws iam put-role-policy --role-name $ROLE_NAME --policy-name ${USER_NAME}_WorkerLogPolicy --policy-document file:///tmp/eks-logs-policy.json
 ----
 +
 Steo 3:: Validate that the policy has been attached to the worker node role.
 +
 [source,shell]
 ----
-aws iam get-role-policy --role-name $ROLE_NAME --policy-name Logs-Policy-For-Worker
+aws iam get-role-policy --role-name $ROLE_NAME --policy-name ${USER_NAME}_WorkerLogPolicy
 ----
 +
 Expected Output:
@@ -377,6 +378,37 @@ Step 4:: Now we can deploy Fluentd. To get started, navigate to the folder for t
 +
 [source,yaml]
 ----
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluentd
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: fluentd
+  namespace: kube-system
+rules:
+- apiGroups: [""]
+  resources:
+  - namespaces
+  - pods
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: fluentd
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fluentd
+subjects:
+- kind: ServiceAccount
+  name: fluentd
+  namespace: kube-system
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -426,7 +458,7 @@ data:
         @type cloudwatch_logs
         @id out_cloudwatch_logs_containers
         region "#{ENV.fetch('REGION')}"
-        log_group_name "/eks/#{ENV.fetch('CLUSTER_NAME')}/containers"
+        log_group_name "/eks/<UserName>/containers"
         log_stream_name_key stream_name
         remove_log_stream_name_key true
         auto_create_stream true
@@ -497,7 +529,7 @@ data:
         @type cloudwatch_logs
         @id out_cloudwatch_logs_systemd
         region "#{ENV.fetch('REGION')}"
-        log_group_name "/eks/#{ENV.fetch('CLUSTER_NAME')}/systemd"
+        log_group_name "/eks/<UserName>/systemd"
         log_stream_name_key stream_name
         auto_create_stream true
         remove_log_stream_name_key true
@@ -510,18 +542,94 @@ data:
       </match>
     </label>
 ---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: fluentd-cloudwatch
+  namespace: kube-system
+  labels:
+    k8s-app: fluentd-cloudwatch
+spec:
+  template:
+    metadata:
+      labels:
+        k8s-app: fluentd-cloudwatch
+    spec:
+      serviceAccountName: fluentd
+      terminationGracePeriodSeconds: 30
+      # Because the image's entrypoint requires to write on /fluentd/etc but we mount configmap there which is read-only,
+      # this initContainers workaround or other is needed.
+      # See https://github.com/fluent/fluentd-kubernetes-daemonset/issues/90
+      initContainers:
+      - name: copy-fluentd-config
+        image: busybox
+        command: ['sh', '-c', 'cp /config-volume/..data/* /fluentd/etc']
+        volumeMounts:
+        - name: config-volume
+          mountPath: /config-volume
+        - name: fluentdconf
+          mountPath: /fluentd/etc
+      containers:
+      - name: fluentd-cloudwatch
+        image: fluent/fluentd-kubernetes-daemonset:v1.1-debian-cloudwatch
+        env:
+          - name: REGION
+            value: us-west-2
+          - name: CLUSTER_NAME
+            value: petstore
+        resources:
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        volumeMounts:
+        - name: config-volume
+          mountPath: /config-volume
+        - name: fluentdconf
+          mountPath: /fluentd/etc
+        - name: varlog
+          mountPath: /var/log
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        - name: runlogjournal
+          mountPath: /run/log/journal
+          readOnly: true
+      volumes:
+      - name: config-volume
+        configMap:
+          name: fluentd-config
+      - name: fluentdconf
+        emptyDir: {}
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: runlogjournal
+        hostPath:
+          path: /run/log/journal
 ----
 +
-Step 5:: Apply the manifest to create the fluentd DaemonSet.
+Step 5:: First we have to update the log_group_name so it’s uniquely identifiable.
 +
-NOTE: Ensure that you are working in this modules directory. i.e. `~/environment/aws-modernization-workshop-advanced/modules/monitor-application/eks`
+[source,shell]
+----
+sed -i "s/<UserName>/${USER_NAME}/" ~/environment/aws-modernization-workshop-advanced/modules/monitor-application/fluentd.yml
+----
++
+Step 6:: Apply the manifest to create the fluentd DaemonSet.
++
+NOTE: Ensure that you are working in this modules directory. i.e. `~/environment/aws-modernization-workshop-advanced/modules/monitor-application`
 +
 [source,shell]
 ----
 kubectl apply -f fluentd.yml
 ----
 +
-Step 6:: We can confirm that all the pods chnage to `Running` status by executing the following command:
+Step 7:: We can confirm that all the pods chnage to `Running` status by executing the following command:
 +
 [source,shell]
 ----
@@ -543,9 +651,9 @@ kube-proxy-hgmvw           1/1     Running   0          4h
 kube-proxy-r84rb           1/1     Running   0          4h
 ----
 +
-Step 7:: Now we can view the CloudWatch log streams for the containers in our `kube-system`. To do this, open a browser tab and navigate to the link:https://us-west-2.console.aws.amazon.com/cloudwatch/[CloudWatch Console] and click *Logs* in the navigation pane. All the CloudWatch Log Groups will be displayed.
+Step 8:: Now we can view the CloudWatch log streams for the containers in our `kube-system`. To do this, open a browser tab and navigate to the link:https://us-west-2.console.aws.amazon.com/cloudwatch/[CloudWatch Console] and click *Logs* in the navigation pane. All the CloudWatch Log Groups will be displayed.
 +
-Step 8:: In the *Filter:* box, enter `eks` and press `[ENTER]` to filter the Log Group for our EKS cluster. Click on the `/eks/petstore/containers` Log Group.
+Step 9:: In the *Filter:* box, enter `eks` and press `[ENTER]` to filter the Log Group for our EKS cluster. Click on the `/eks/petstore/containers` Log Group.
 +
 image:cw-logs.png[Log Group]
 +

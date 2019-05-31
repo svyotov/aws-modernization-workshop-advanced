@@ -64,7 +64,7 @@ items:
           app: postgres
       spec:
         containers:
-        - image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_postgres:latest
+        - image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/<UserName>-petstore_postgres:latest
           name: postgres
           env:
           - name: POSTGRES_PASSWORD
@@ -121,13 +121,13 @@ items:
       spec:
         initContainers:
         - name: init-frontend
-          image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_postgres:latest
+          image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/<UserName>-petstore_postgres:latest
           command: ['sh', '-c',
                     'until pg_isready -h postgres.petstore.svc -p 5432;
                     do echo waiting for database; sleep 2; done;']
         containers:
         - name: frontend
-          image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_frontend:latest
+          image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/<UserName>-petstore_frontend:latest
           resources:
             requests:
               memory: "512m"

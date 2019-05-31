@@ -47,9 +47,25 @@ Now that you are logged into the *AWS Management Console* mfor you account, you 
 ////
 === Create the Workshop environment using CloudFormation
 
-Log into the *AWS account* with the *IAM Users* credentials provided to you and click *Deploy to AWS*:
-
+Step 1:: Log into the *AWS account* with the *IAM User* credentials provided to you and click *Deploy to AWS*:
++
 image:deploy-to-aws.png["Deploy to AWS",align="left",link="https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create/review?stackName=AWSModernizationWorkshop&templateURL=https://s3-us-west-2.amazonaws.com/modernization-workshop-west-2/create-environment/templates/workshop_env_master.yaml"]
++
+Step 2:: Provide a unique *Stack name* by adding your *IAM User Name* to the beginning of `AWSModernizationWorkshop`. This will allow you to differentiate your resources from other Woskhope attendees.
++
+image:tag.png[Username]
++
+Step 3:: Select `t2.large` as the *Cloud9 Instance type*.
++
+image:t2-medium.png[t2.large]
++
+Step 4:: Keep the other parameters at their default.
++
+Step 5:: Check both *Capabilities* check-boxes.
++
+image:cfn-capabilities.png[Capabilities]
++
+Step 6:: Click *Create Stack*.
 
 ****
 The CloudFormation Template will create the following resources in your AWS Account:
@@ -58,10 +74,7 @@ The CloudFormation Template will create the following resources in your AWS Acco
 * `C9InstanceFunction` - Lambda Function to map the IAM Role to the Cloud9 Instance.
 * `C9InstanceCR` - Cloud9 IDE Instance.
 ****
-
-WARNING: Remember to add your *IAM User* credentials in front of the *Stack name* in order to individually separate your stack from other workshop attendees! For example:
-
-image:tag.png[Username]
-
-
-Once the environment has been deployed, you may proceed with the additional configuration steps in the *Getting Started* module.
+////
+WARNING: If you recive an error creating the CloudFormation Stack, it may be due to `t2.micro` instance availability in the new `us-west-2d` *Availability Zone*. Simply delete the Stack and click on the *Deplot to AWS* icon again.
+////
+It should take around [underline]#*15 minutes*# for the environment to be deployed. Use the link:https://us-west-2.console.aws.amazon.com/cloudformation/home?region=us-west-2[AWS CloudFormation] service console to see the status of you stack. Once the environment has been deployed, you will see the [green]#*CREATE_COMPLETE*# message for your *[red yellow-background]#<User_Name>#-AWSModernizationWorkshop* stack. Once you see this, you may proceed with the additional configuration steps in the *Getting Started* module.

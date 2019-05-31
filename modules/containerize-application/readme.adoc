@@ -93,21 +93,27 @@ CloudFormation creates the following resources:
 * `PetStorePostgreSQLRepository` - ECR Respository for PostgresSQL containers.
 * `PetStoreFrontendRepository` - ECR Repository for the front-end containers.
 ****
-
-Step 1:: Using the Cloud9 IDE `terminal`, deploy the CloudFormation template using the `aws cli` tool. 
+Step 1:: We need to replace the placeholder for user name in the template file, so as to distinguish tour ECR Repository from those used by the other Workshop attendees.
++
 [source,shell]
 ----
-aws cloudformation create-stack \
-  --stack-name "petstore-ecr" \
-  --template-body file://petstore-ecr-cf-resources.yaml \
-  --capabilities CAPABILITY_NAMED_IAM
+sed -i "s/<UserName>/${USER_NAME}/" ~/environment/aws-modernization-workshop-advanced/modules/containerize-application/petstore-ecr-cf-resources.yaml
 ----
-
-Step 2:: Wait for the Template to finish deploying.
-
++
+Step 2:: Using the Cloud9 IDE `terminal`, deploy the CloudFormation template using the `aws cli` tool. 
++
 [source,shell]
 ----
-until [[ `aws cloudformation describe-stacks --stack-name "petstore-ecr" --query "Stacks[0].[StackStatus]" --output text` == "CREATE_COMPLETE" ]]; do  echo "The stack is NOT in a state of CREATE_COMPLETE at `date`";   sleep 30; done && echo "The Stack is built at `date` - Please proceed"
+aws cloudformation create-stack --stack-name "${USER_NAME}-petstore-ecr" \
+--template-body file://petstore-ecr-cf-resources.yaml \
+--capabilities CAPABILITY_NAMED_IAM
+----
++
+Step 3:: Wait for the Template to finish deploying.
++
+[source,shell]
+----
+until [[ `aws cloudformation describe-stacks --stack-name "${USER_NAME}-petstore-ecr" --query "Stacks[0].[StackStatus]" --output text` == "CREATE_COMPLETE" ]]; do  echo "The stack is NOT in a state of CREATE_COMPLETE at `date`";   sleep 30; done && echo "The Stack is built at `date` - Please proceed"
 ----
 
 ===== Pushing the Petstore images to Amazon Elastic Container Registry (ECR)
@@ -126,10 +132,10 @@ Step 2:: Use the AWS CLI to get information about the two Amazon ECR repositorie
 +
 [source,shell]
 ----
-aws ecr describe-repositories --repository-name petstore_postgres petstore_frontend
+aws ecr describe-repositories --repository-name ${USER_NAME}-petstore_postgres ${USER_NAME}-petstore_frontend
 ----
 +
-Expceted output:
+Example output:
 +
 [.output]
 ....
@@ -157,18 +163,18 @@ Step 3:: Tag the local docker images with the locations of the remote ECR reposi
 +
 [source,shell]
 ----
-docker tag postgres:9.6 $(aws ecr describe-repositories --repository-name petstore_postgres --query=repositories[0].repositoryUri --output=text):latest
+docker tag postgres:9.6 $(aws ecr describe-repositories --repository-name ${USER_NAME}-petstore_postgres --query=repositories[0].repositoryUri --output=text):latest
 
-docker tag containerize-application_petstore:latest $(aws ecr describe-repositories --repository-name petstore_frontend --query=repositories[0].repositoryUri --output=text):latest
+docker tag containerize-application_petstore:latest $(aws ecr describe-repositories --repository-name ${USER_NAME}-petstore_frontend --query=repositories[0].repositoryUri --output=text):latest
 ----
 +
 Step 4:: Once the images have been tagged, push them to the remote repository.
 +
 [source,shell]
 ----
-docker push $(aws ecr describe-repositories --repository-name petstore_postgres --query=repositories[0].repositoryUri --output=text):latest
+docker push $(aws ecr describe-repositories --repository-name ${USER_NAME}-petstore_postgres --query=repositories[0].repositoryUri --output=text):latest
 
-docker push $(aws ecr describe-repositories --repository-name petstore_frontend --query=repositories[0].repositoryUri --output=text):latest
+docker push $(aws ecr describe-repositories --repository-name ${USER_NAME}-petstore_frontend --query=repositories[0].repositoryUri --output=text):latest
 ----
 +
 You should see the Docker images being pushed with an output similar to this:
@@ -238,7 +244,7 @@ items:
     capacity:
       storage: 20Gi
     accessModes:
-      - ReadWriteOnce
+      - ReadWriteMany
     hostPath:
       path: "/mnt/data"
 
@@ -250,7 +256,7 @@ items:
   spec:
     storageClassName: gp2
     accessModes:
-      - ReadWriteMany
+      - ReadWriteOnce
     resources:
       requests:
         storage: 20Gi
@@ -284,7 +290,7 @@ items:
           app: postgres
       spec:
         containers:
-        - image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_postgres:latest
+        - image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/<UserName>-petstore_postgres:latest
           name: postgres
           env:
           - name: POSTGRES_PASSWORD
@@ -341,13 +347,13 @@ items:
       spec:
         initContainers:
         - name: init-frontend
-          image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_postgres:latest
+          image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/<UserName>-petstore_postgres:latest
           command: ['sh', '-c',
                     'until pg_isready -h postgres.petstore.svc -p 5432;
                     do echo waiting for database; sleep 2; done;']
         containers:
         - name: frontend
-          image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/petstore_frontend:latest
+          image: <YourAccountID>.dkr.ecr.us-west-2.amazonaws.com/<UserName>-petstore_frontend:latest
           resources:
             requests:
               memory: "512m"
@@ -370,17 +376,21 @@ items:
             value: admin
           - name: DB_PASS
             value: password
+
 ----
 +
 NOTE: Amazon EKS clusters that were created prior to Kubernetes version 1.11 were not created with any storage classes. Since we are running the version `1.12`, the default `StorageClass` has already been set to link:https://aws.amazon.com/ebs/[Amazon Elastic Block Store (EBS)]. Therefore there is no `StorageClass` definition int he `petstore-eks-manifest.yaml` file.
 +
-Step 2:: Close the `petstore-eks-manifest.yaml`. Run the following commands in the Cloud9 IDE `terminale` to replace the *<YourAccountID>* placeholders with your AWS Account ID.
+Step 2:: Close the `petstore-eks-manifest.yaml`. Run the following commands in the Cloud9 IDE `terminale` to replace the *<YourAccountID>* as well as *<UserName>* placeholders with your AWS Account ID and unique AWS IAM 
+User.
 +
 [source,shell]
 ----
 ACCOUNT_ID=$(aws sts get-caller-identity --output text --query 'Account')
 
 sed -i "s/<YourAccountID>/${ACCOUNT_ID}/" petstore-eks-manifest.yaml
+
+sed -i "s/<UserName>/${USER_NAME}/" petstore-eks-manifest.yaml
 ----
 +
 Step 3:: Apply your manifest by running this command in your Cloud9 IDE `terminal`:
@@ -403,7 +413,7 @@ service/frontend created
 deployment.apps/frontend created
 ....
 +
-Step 4:: As you can see above this manifest created and configured several components in your Kubernetes cluster, we've created a *namespace*, *persistentvolume*, *persistentvolumeclaim*, 2 *services*, and 2 *deployments*.
+As you can see above this manifest created and configured several components in your Kubernetes cluster, we've created a *namespace*, *persistentvolume*, *persistentvolumeclaim*, 2 *services*, and 2 *deployments*.
 +
 [options="header"]
 |=======================
@@ -415,7 +425,7 @@ Step 4:: As you can see above this manifest created and configured several compo
 | *Deployment* | Deployment controller provides declarative updates for Pods and ReplicaSets.
 |=======================
 +
-Step 5:: Now that the scheduler knows that you want to run this application, it will find available *disk*, *cpu* and *memory* and will place the pods on *Worker Nodes*. Let's watch as they get provisioned.
+Step 4:: Now that the scheduler knows that you want to run this application, it will find available *disk*, *cpu* and *memory* and will place the pods on *Worker Nodes*. Let's watch as they get provisioned.
 +
 [source,shell]
 ----
@@ -432,7 +442,7 @@ frontend-869db5db6b-j5nfj   0/1       Init:0/1            0          3m
 postgres-678864b7-vs5zj     0/1       ContainerCreating   5          3m
 ....
 +
-Step 6:: Once the *STATUS* changes to *Running* for all 3 of your containers we can then load the services and navigate to the exposed application (you will need to `[ctrl + c]` since its watching).
+Step 5:: Once the *STATUS* changes to *Running* for all 3 of your containers we can then load the services and navigate to the exposed application (you will need to `[ctrl + c]` since its watching).
 +
 [source,shell]
 ----
@@ -448,7 +458,7 @@ frontend   LoadBalancer   10.100.20.251   ac7059d97a51611e88f630213e88d018-20932
 postgres   ClusterIP      None            <none>                                                                    5432/TCP                                    6m
 ....
 +
-Step 7:: Here we can see that we're exposing the *frontend* using an ELB, which is available at the *EXTERNAL-IP* field. Copy and paste this into a new browser tab. You should see the following web application:
+Step 5:: Here we can see that we're exposing the *frontend* using an ELB, which is available at the *EXTERNAL-IP* field. Copy and paste this into a new browser tab. You should see the following web application:
 +
 image:preview.png[Preview]
 

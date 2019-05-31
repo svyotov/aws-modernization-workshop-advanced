@@ -77,7 +77,7 @@ Cluster autoscaling deals with how many physical EC2 instances are running in th
 
 Lets deploy Cluster Autoscaler to your EKS cluster.
 
-NOTE: The following section of the module assumes a working EKS cluster, created in the *Amazon EKS* module.
+NOTE: The following section of the module assumes a working EKS cluster, created in the *Modern Container Application on EKS* module.
 
 Step 1:: Switch to the tab where you have your Cloud9 `terminal` opened and change to this modules directory by running:
 +
@@ -90,9 +90,9 @@ Step 2:: Get the autoscaling group name of for the worker nodes, to do this run 
 +
 [source,shell]
 ----
-ASG=$(aws autoscaling describe-auto-scaling-groups | jq -r '.AutoScalingGroups[] | select((.Tags[].Value == "owned") and (.Tags[].Key == "kubernetes.io/cluster/petstore")) .AutoScalingGroupName')
+ASG=$(aws autoscaling describe-auto-scaling-groups | jq -r '.AutoScalingGroups[] | select((.Tags[].Value == "owned") and (.Tags[].Key == "kubernetes.io/cluster/'$USER_NAME'-petstore")) .AutoScalingGroupName')
 
-echo "export ASG=${ASG}" >> ~/.bash_profile
+echo "export ASG=${ASG}" >> ~/.bashrc
 
 echo $ASG
 ----
@@ -263,7 +263,12 @@ spec:
 +
 Step 4:: Replace `<AutoScalingGroupName>` with the output from *Step 2* and save the new file.
 +
-Step 5:: Return to `terminal` session and run the following command:
+[source,shell]
+----
+sed -i "s/<AutoScalingGroupName>/${ASG}/" cluster-autoscaler.yaml
+----
++
+Step 5:: Apply the autoscaling configuration.
 +
 [source,shell]
 ----
@@ -298,7 +303,7 @@ eksctl-petstore-nodegroup-ng-4897-NodeInstanceRole-5YGEF14MRJVE
 +
 [IMPORTANT]
 ====
-If there is no output to the above command, make sure to re-run the following commands from the *Container Application Monitoring* module.
+If there is [underline]#no# output to the above command, make sure to re-run the following commands from the *Container Application Monitoring* module.
 +++ <details><summary> +++
 *Command Reference*:
 +++ </summary><div> +++
@@ -340,16 +345,16 @@ Step 7:: With the output from the cli you can then use the `put-role-policy` AWS
 }
 ----
 +
-Step 8:: Add the policy to the Instance role by running the following command, which substitutes the `role-name` from *Step 6*:
+Add the policy to the Instance role by running the following command, which substitutes the `role-name` from *Step 6*:
 +
 [source,shell]
 ----
-aws iam put-role-policy --policy-name AmazonEKS_CA_Policy \
+aws iam put-role-policy --policy-name ${USER_NAME}_EksCAPolicy \
 --role-name ${ROLE_NAME} \
 --policy-document file://ca-policy.json
 ----
 +
-Step 9:: Now let's see all the pods and see what we have done. View the `kubectl` log output by running the following command:
+Step 8:: Now let's see all the pods and see what we have done. View the `kubectl` log output by running the following command:
 +
 [source,shell]
 ----
@@ -382,7 +387,7 @@ I0824 19:47:29.223668       1 static_autoscaler.go:352] Scale down status: unnee
 +
 In the logs here you can see that it is constantly checkin the amount of nodes and capactiy each node has available, if we have too many requests for resources and not enough availabe it will provision new nodes for you. Let's try this.
 +
-Step 10:: First we need to scale our `deployment` using the `scale` subcommand for `kubectl`.  Press `[Ctrl + c]` to stop to stop the logs and run the following command:
+Step 9:: First we need to scale our `deployment` using the `scale` subcommand for `kubectl`.  Press `[Ctrl + c]` to stop to stop the logs and run the following command:
 +
 [source,shell]
 ----
@@ -396,23 +401,22 @@ Expected Output:
 deployment.extensions/frontend scaled
 ....
 +
-Step 11:: Now we should again log the `cluster-autoscaler` pod and you will see it has update the `desired` count of instances to reflect that.
+Step 10:: Now we should again log the `cluster-autoscaler` pod and you will see it has update the `desired` count of instances to reflect that.
 +
 [source,shell]
 ----
 kubectl logs -f deploy/cluster-autoscaler --namespace kube-system -f
 ----
 +
-In the logs for this you will see the new nodes being provisioned into the
-cluster.
+In the logs for this you will see the new nodes being provisioned into the cluster.
 +
-Step 12:: Now that you have seen this application scale up we can scale this down, but prior to scale down we need to disable scale down on the node running `cluster-autoscaler` so that it doesn't fail.
+Step 11:: Now that you have seen this application scale up we can scale this down, but prior to scale down we need to disable scale down on the node running `cluster-autoscaler` so that it doesn't fail.
 +
 [source,shell]
 ----
 kubectl annotate node \
-  $(kubectl get pod -n kube-system -o jsonpath="{.items[0].spec.nodeName}" -l app=cluster-autoscaler) \
-  cluster-autoscaler.kubernetes.io/scale-down-disabled=true
+$(kubectl get pod -n kube-system -o jsonpath="{.items[0].spec.nodeName}" -l app=cluster-autoscaler) \
+cluster-autoscaler.kubernetes.io/scale-down-disabled=true
 ----
 +
 To see this applied you can get the `node` `annotations` using the following commanbd:
@@ -427,7 +431,7 @@ kubectl get node $(kubectl get pod -n kube-system -o jsonpath="{.items[0].spec.n
 map[cluster-autoscaler.kubernetes.io/scale-down-disabled:true node.alpha.kubernetes.io/ttl:0 volumes.kubernetes.io/controller-managed-attach-detach:true]
 ....
 +
-Step 13:: Now that we have the instance cordoned from `down scaling` we can then `scale` the `--replicas` to `2` by issueing the folling commanbd:
+Step 12:: Now that we have the instance cordoned from `down scaling` we can then `scale` the `--replicas` to `2` by issueing the folling commanbd:
 +
 [source,shell]
 ----

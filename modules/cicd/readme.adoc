@@ -51,7 +51,7 @@ Step 2:: Next we wil create the necessary Service Roles using the CloudFormation
 +
 [source,shell]
 ----
-aws cloudformation create-stack --stack-name "eks-cicd-demo-roles" \
+aws cloudformation create-stack --stack-name "${USER_NAME}-cicd-roles" \
 --template-body=file://eks-cicd-roles-template.yaml \
 --capabilities CAPABILITY_IAM
 ----
@@ -69,16 +69,16 @@ Step 3:: Wait for the Template to finish deploying.
 +
 [source,shell]
 ----
-until [[ `aws cloudformation describe-stacks --stack-name "eks-cicd-demo-roles" --query "Stacks[0].[StackStatus]" --output text` == "CREATE_COMPLETE" ]]; do  echo "The stack is NOT in a state of CREATE_COMPLETE at `date`";   sleep 30; done && echo "The Stack is built at `date` - Please proceed"
+until [[ `aws cloudformation describe-stacks --stack-name "${USER_NAME}-cicd-roles" --query "Stacks[0].[StackStatus]" --output text` == "CREATE_COMPLETE" ]]; do  echo "The stack is NOT in a state of CREATE_COMPLETE at `date`";   sleep 30; done && echo "The Stack is built at `date` - Please proceed"
 ----
 
 ==== Create Container Repository
 
-Step 1:: As we saw with the other examples in this workshop, we will need to store our demo applications' docker containers, so next we'll create an AWS ECR respository for the application contianers by running the following command:
+As we saw with the other examples in this workshop, we will need to store our demo applications' docker containers, so next we'll create an AWS ECR respository for the application contianers by running the following command:
 + 
 [source,shell]
 ----
-aws ecr create-repository --repository-name eks-cicd-demo-repo --region us-west-2
+aws ecr create-repository --repository-name ${USER_NAME}-cicd-repo --region us-west-2
 ----
 +
 Example Output:
@@ -102,7 +102,7 @@ Step 1:: Next we will create an AWS CodeCommit repository to store the source co
 +
 [source,shell]
 ----
-aws codecommit create-repository --repository-name eks-cicd-demo-repo --repository-description "EKS CICD demo application repository" --region us-west-2
+aws codecommit create-repository --repository-name ${USER_NAME}-cicd-demo-repo --repository-description "EKS CICD demo application repository for ${USER_NAME}" --region us-west-2
 ----
 +
 Example Output:
@@ -132,28 +132,28 @@ git config --global credential.helper '!aws codecommit credential-helper $@'
 
 git config --global credential.UseHttpPath true
 
-git clone https://git-codecommit.us-west-2.amazonaws.com/v1/repos/eks-cicd-demo-repo
+git clone https://git-codecommit.us-west-2.amazonaws.com/v1/repos/${USER_NAME}-cicd-demo-repo
 
-cp ./sample-app/* eks-cicd-demo-repo/
+cp ./sample-app/* ${USER_NAME}-cicd-demo-repo/
 
-cd eks-cicd-demo-repo
+cd ${USER_NAME}-cicd-demo-repo
 
 git add . && git commit -m "initial commit of sample app" && git push origin master
 ----
 
-==== Create the Ci/CD Pipeline
+==== Create the CI/CD Pipeline
 
 Step 1:: Now that we have a place to store our docker container, a source code repository and the necessary Service roles, we can create our CI/CD Pipeline. Open a broweser tab and navigate to the link:https://us-west-2.console.aws.amazon.com/codesuite/codepipeline/pipelines[AWS CodePipeline] Service Console. Click on *Create pipeline*.
 +
 image:create-pipeline.png[Create Pipeline]
 +
-Step 2:: After the *Create new pipline* wizard opens, the first step is to configure the *Pipeline settings*. Enter `EKS-CICD-Demo` as the *Pipeline name*. Select *Existing service role* and from the drop-down, select the IAM role we created in *Step 2*.
+Step 2:: After the *Create new pipline* wizard opens, the first step is to configure the *Pipeline settings*. Enter `[red yellow-background]#<User Name>#-CICD-Demo` as the *Pipeline name*. Select *Existing service role* and from the drop-down, select the IAM role we created in *Step 2*.
 +
-NOTE: The *Role name* should start with `eks-cicd-demo-roles-CodepipleServiceRole-...`.
+NOTE: The *Role name* should start with `[red yellow-background]#<User Name>#-cicd-roles-CodepipleServiceRole-...`.
 +
-Step 3:: Under *Artifact store*, click *Custom location*. From the *Bucket* drop-down list, select the S3 Buvket created in *Step 2*.
+Step 3:: Expand the *Advanced settings*, under *Artifact store*, click *Custom location*. From the *Bucket* drop-down list, select the S3 Buvket created in *Step 2*.
 +
-NOTE: The *Bucket* name should start with `eks-cicd-demo-roles-ekscicddemobucket-...`.
+NOTE: The *Bucket* name should start with `[red yellow-background]#<User Name>#-cicd-demo-roles-ekscicddemobucket-...`.
 +
 Step 4:: Click on *Next* to continue.
 +
@@ -161,11 +161,11 @@ image:pipeline-settings.png[Pipeline Settings]
 +
 Step 5:: Next we'll configure the *Source stage*. Click the drop-down and select *AWS CodeCommit* as the *Source provider*.
 +
-Step 6:: For the *Repository name*, click the drop-down to select the repository we created in *Step 4*, `eks-cicd-demo-repo`.
+Step 6:: For the *Repository name*, click the drop-down to select the repository we created in *Step 4*, `[red yellow-background]#<User Name>#-cicd-demo-repo`.
 +
 Step 7:: Select the `master` branch from the drop-down for *Branch name*.
 +
-Step 8:: Keep the default recommended setting for *Change detection options* as *Amazon CloudWatch* and click *Next*.
+Step 8:: Keep the default recommended setting for *Change detection options* as *AWS CodePipeline* and click *Next*.
 +
 image:pipeline-source.png[Pipeline Source]
 +
@@ -173,7 +173,7 @@ Step 9:: Now we configure the *Build stage*. Click the drop-down and select *AWS
 +
 image:create-project.png[Create Build]
 +
-Step 10:: A new browser window will open to create a new build project. Under the *Project configuration* section, enter `eks-build-project` as the *Project name* and provide an option *Description*.
+Step 10:: A new browser window will open to create a new build project. Under the *Project configuration* section, enter `[red yellow-background]#<User Name>#-build-project` as the *Project name* and provide an optional *Description*.
 +
 image:build-project.png[Project Name]
 +
@@ -189,7 +189,7 @@ Step 14:: Ensure that *Privileged* check-box is *checked*.
 +
 Step 15:: For the *Service role*, select *Existing service role* and choose the role we created in *Step 2*.
 +
-NOTE: The *Role name* should start with `eks-cicd-demo-roles-CodeBuildServiceRole-...`.
+NOTE: The *Role name* should start with `[red yellow-background]#<User Name>#-cicd-demo-roles-CodeBuildServiceRole-...`.
 +
 Step 16:: *Uncheck* the *Allow AWS CodeBuild to modify this service role* check-box.
 +
@@ -197,8 +197,8 @@ image:build-environment.png[Build Environment]
 +
 Step 17:: Expand the *Additional configuration* section and add the following *Environmental variables* as the `Name`:
 +
-* `AWS_ACCOUNT_ID` - Add your 12 digit AWS Account as the value.
-* `IMAGE_REPO_NAME` - Add `eks-cicd-demo-repo` as the value.
+* `AWS_ACCOUNT_ID` - Add your 12 digit AWS Account provided as the value.
+* `IMAGE_REPO_NAME` - Add `[red yellow-background]#<User Name>#-cicd-repo` as the value.
 +
 IMPORTANT: Make sure there are no spaces in any of the values entered!
 +
@@ -232,11 +232,11 @@ Step 2:: Next we will add some of our EKS parameters to the lambda configuration
 +
 [source,shell]
 ----
-sed -i -e "s#\$EKS_CA#$(aws eks describe-cluster --name petstore --query cluster.certificateAuthority.data --output text)#g" ./config
+sed -i -e "s#\$EKS_CA#$(aws eks describe-cluster --name ${USER_NAME}-petstore --query cluster.certificateAuthority.data --output text)#g" ./config
 
-sed -i -e "s#\$EKS_CLUSTER_HOST#$(aws eks describe-cluster --name petstore --query cluster.endpoint --output text)#g" ./config
+sed -i -e "s#\$EKS_CLUSTER_HOST#$(aws eks describe-cluster --name ${USER_NAME}-petstore --query cluster.endpoint --output text)#g" ./config
 
-sed -i -e "s#\$EKS_CLUSTER_NAME#petstore#g" ./config
+sed -i -e "s#\$EKS_CLUSTER_NAME#${USER_NAME}-petstore#g" ./config
 
 sed -i -e "s#\$EKS_CLUSTER_USER_NAME#lambda#g" ./config
 ----
@@ -281,9 +281,9 @@ npm install
 
 zip -r lambda-package_v1.zip .
 
-export LAMBDA_SERVICE_ROLE=$(aws cloudformation describe-stacks --stack-name eks-cicd-demo-roles | jq -r '.Stacks[0].Outputs[]|select(.OutputKey=="LambdaExecutionRoleArn")|.OutputValue')
+export LAMBDA_SERVICE_ROLE=$(aws cloudformation describe-stacks --stack-name ${USER_NAME}-cicd-roles | jq -r '.Stacks[0].Outputs[]|select(.OutputKey=="LambdaExecutionRoleArn")|.OutputValue')
 
-aws lambda create-function --function-name LambdaKubeClient \
+aws lambda create-function --function-name ${USER_NAME}-LambdaKubeClient \
 --runtime nodejs8.10 --role $LAMBDA_SERVICE_ROLE --handler index.handler  \
 --zip-file fileb://lambda-package_v1.zip --timeout 10 --memory-size 128
 ----
@@ -293,7 +293,7 @@ These commands will:
 . Install the Javascript package manager.
 . Compress the Javascript packages for lambda deployment.
 . Get the link:https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html[Amazon Resource Name (ARN)] for the IAM Service Role that gives lambda the necessary EKS service permissions.
-. Deploy the lambda function, `LambdaKubeClient`, using the AWS CLI.
+. Deploy the lambda function, `[red yellow-background]#<User Name>#-LambdaKubeClient`, using the AWS CLI.
 
 +
 Example Output:
@@ -336,7 +336,7 @@ clusterrolebinding.rbac.authorization.k8s.io/default-admin created
 ==== Add the Deployment Stage to the Ci/CD Pipeline
 Now that all our components are in place, we need to add a *Deployment* stage to our CI/CD pipeline, in order to deploiy our Demo Application to Kubernetes i.e. into production.
 
-Step 1:: In your browser, navigate to the link:https://us-west-2.console.aws.amazon.com/codesuite/codepipeline/pipelines[AWS CodePipeline] Service Console and click on the `EKS-CICD-Demo` pipeline we created.
+Step 1:: In your browser, navigate to the link:https://us-west-2.console.aws.amazon.com/codesuite/codepipeline/pipelines[AWS CodePipeline] Service Console and click on the `[red yellow-background]#<User Name>#-CICD-Demo` pipeline we created.
 +
 Step 2:: To add a new stage to our pipeline, click the *Edit* button.
 +
@@ -354,17 +354,17 @@ Step 5:: We now have a new stage to our pipeline called *Deploy*. Next we need t
 +
 image:pipeline-add-action.png[Add Action Group]
 +
-Step 6:: Once the *Edit action* dialogue opens, enter `LambdaKubeClient` as teh *Action name*.
+Step 6:: Once the *Edit action* dialogue opens, enter `LambdaKubeClient` as the *Action name*.
 +
 Step 7:: Select *AWS Lambda* as the *Action provider*.
 +
 Step 8:: For the *Input artifacts*, select the *BuildArtifact* as the previous stage to our Deploy stage.
 +
-Step 9:: From the *Function name* drop-down box, select the `LambdaKubeClient` funciton that was created in the previous section.
+Step 9:: From the *Function name* drop-down box, select the `[red yellow-background]#<User Name>#-LambdaKubeClient` funciton that was created in the previous section.
 +
-Step 10:: In order to tell the function where to get the Demo Application docker image, enter `eks-cicd-demo-rep` as a lambda event parameter to our deployment lambda function.
+Step 10:: In order to tell the function where to get the Demo Application docker image, enter `[red yellow-background]#<User Name>#-cicd-rep` as a lambda event parameter to our deployment lambda function.
 +
-Step 11:: Click on the *Save* button to save our action configuration.
+Step 11:: Click on the *Done* button to save our action configuration.
 +
 image:pipeline-edit-action.png[Edit Action]
 +
@@ -380,7 +380,7 @@ image:pipeline-complete.png[Pipeline Complete]
 Once the pipeline has completed, we can confirm our Demo Application is running production by executing the following command in our Cloud9 IDE `terminal`.
 [source,shell]
 ----
-kubectl get deployment eks-cicd-demo-repo -o wide
+kubectl get deployment ${USER_NAME}-cicd-repo -o wide
 ----
 
 Example Output:

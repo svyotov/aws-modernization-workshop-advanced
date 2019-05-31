@@ -319,7 +319,7 @@ Example Output:
 }
 ----
 
-Step 10:: Now that oiur deployment lambda function has been created and deployed within our AWS Account, we need to provide it with admin access to the Kubernetes cluster. This is accomplished by providing it with Role-based access control (link:https://kubernetes.io/docs/reference/access-authn-authz/rbac/[RBAC]) to the default service account. Create a role binding by running the following command:
+Step 6:: Now that oiur deployment lambda function has been created and deployed within our AWS Account, we need to provide it with admin access to the Kubernetes cluster. This is accomplished by providing it with Role-based access control (link:https://kubernetes.io/docs/reference/access-authn-authz/rbac/[RBAC]) to the default service account. Create a role binding by running the following command:
 +
 [source,shell]
 ----

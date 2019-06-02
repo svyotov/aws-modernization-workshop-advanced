@@ -362,7 +362,7 @@ Step 8:: For the *Input artifacts*, select the *BuildArtifact* as the previous s
 +
 Step 9:: From the *Function name* drop-down box, select the `[red yellow-background]#<User Name>#-LambdaKubeClient` funciton that was created in the previous section.
 +
-Step 10:: In order to tell the function where to get the Demo Application docker image, enter `[red yellow-background]#<User Name>#-cicd-rep` as a lambda event parameter to our deployment lambda function.
+Step 10:: In order to tell the function where to get the Demo Application docker image, enter `[red yellow-background]#<User Name>#-cicd-repo` as a lambda event parameter to our deployment lambda function.
 +
 Step 11:: Click on the *Done* button to save our action configuration.
 +

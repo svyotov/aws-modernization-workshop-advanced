@@ -13,7 +13,7 @@
 ** Configure a CI/CD pipeline using AWS CodePipeline.
 ** Deploy AWS CodeBuild to build your container image and push to ECS.
 
-*Lab Requirements*
+*Lab Requirements:*
 
 * Cloud9 IDE.
 * an Amazon Elastic Container Service for Kubernetes Cluster.

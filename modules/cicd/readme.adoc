@@ -6,14 +6,14 @@
 == EKS Continuous Integration/Continuous Delivery (CI/CD)
 
 ****
-*Expected Outcome:*
+*[underline]#Expected Outcome#:*
 
 * 300 level understaing of Kubernetes Continuous Deployment:
 ** Create a source code repository using AWS CodeCommit.
 ** Configure a CI/CD pipeline using AWS CodePipeline.
 ** Deploy AWS CodeBuild to build your container image and push to ECS.
 
-*Lab Requirements:*
+*[underline]#Lab Requirements#:*
 
 * Cloud9 IDE.
 * an Amazon Elastic Container Service for Kubernetes Cluster.

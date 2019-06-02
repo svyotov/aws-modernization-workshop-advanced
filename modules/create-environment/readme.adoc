@@ -6,12 +6,12 @@
 == Creating the Workshop Environment
 
 ****
-*Lab Requirements:*
+*[underline]#Lab Requirements#:*
 
 * An AWS account provided to you by the AWS Instructor.
 * Working Laptop with Internet Access.
 
-*Note:*
+*[underline]#Note#:*
 
 * All AWS resources used for this workshop are to be created in the *us-west-2* AWS Region.
 * Any resources created during the workshop must be named with the *IAM User* proivded.

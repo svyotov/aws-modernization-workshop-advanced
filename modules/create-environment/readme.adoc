@@ -13,7 +13,7 @@
 
 *[underline]#Note#:*
 
-* All AWS resources used for this workshop are to be created in the *us-west-2* AWS Region.
+* All AWS resources used for this workshop are to be created in the *[underline]#us-west-2#* AWS Region.
 * Any resources created during the workshop must be named with the *IAM User* proivded.
 ****
 

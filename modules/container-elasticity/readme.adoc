@@ -6,64 +6,26 @@
 == Container Elasticity
 
 ****
-*Expected Outcome:*
+*[underline]#Expected Outcome:#*
 
 * 300 level understanding of EKS Scaling Patterns.
 
-*Lab Requirements:*
+*[underline]#Lab Requirements:#*
 
 * an Amazon Elastic Container Service for Kubernetes Cluster with:
 ** `petstore` deployment.
 ** application monitoring has been confgiured.
-//* an Amazon Elastic Container Service Cluster.
+
 * Cloud9 IDE.
 
-*Average Lab Time:*
+*[underline]#Average Lab Time:#*
 15-20 minutes
 ****
 
 === Introduction
-
 In this module we will take the existing applications you've deployed into your Amazon EKS cluster and demonstrate some of the scaling capabilities.
-////
-==== Amazon Fargate AutoScaling
 
-To scale a Fargate task you will need to configure this via the console, or via the CLI. For this example we're going to go through the Console.
-
-NOTE: The following part of the module assumes a working ECS cluster, created in *Amazon ECS & Fargate* module.
-
-Step 1:: Navigate to the Petstores Services console within the link:https://console.aws.amazon.com/ecs/home#/clusters/petstore-workshop/services/petstore/details[AWS ECS Console].
-+
-image::ecs-services-console.png[ECS Console]
-+
-Step 2:: From this screen click on the *Auto Scaling* tab in the Services panel. Where you will see a note for "*Scalable Target* No Auto Scaling resources configured for this service. Click the update button to configure Auto Scaling for tasks".
-+
-image::ecs-auto-scaling-console.png[Auto Scaling Console]
-+
-Step 3:: Now we can click *Update* as the note says to configure our Auto Scaling.
-+
-NOTE: The petstore app in it's current configuration on Fargate isn't actually auto scalable. Each replica that is created will have a new Postrges container deployed along side it without shared storage. *This is for demonstration purposes only.*
-+
-Step 4:: We'll then leave all the settings the same on *Configure service* page and click *Next step*.
-
-Step 5:: Again leaving the settings the same on *Configure network* and clicking *Next step*.
-
-Step 6:: Now on the *Set Auto Scaling (optional)* page we can select the option *Configure Service Auto Scaling to adjust your service’s desired count* This will open up the following panel allowing us to set our auto scaling rules.
-+
-image::ecs-auto-scaling.png[Set Auto Scaling (optional)]
-+
-Step 7:: We'll fill this out with demo information set *Minimum number of tasks* to `1` set *Desired number of tasks* to `1` and set *Maximum number of tasks* to `5` allowing Fargate to consume upto 5 running tasks when the app needs to auto scale and stops after that.
-
-Step 8:: We'll then *Add scaling policy* which will open up a panel for us to add an Auto Scaling Policy.
-
-Step 9:: In this form select *Target tracking* set the *Policy name** to `PetstoreFrontendAutoscalingPolicy` configure which *ECS service metric** to scale based on and then add a *Target value* of `75` which will tell it to scale when the container gets to `75%` of whatever metric you are using.
-
-Step 10:: When you are done *Save* that and it will close the panel and you will be  able to select *Next step* continuing to *Update Service* which will apply all of your changes.
-
-This is how easy it is to configure your Auto Scaling policies for an Amazon ECS and Amazon Fargate Cluster.
-////
 === Amazon EKS AutoScaling
-
 Within a Kubernetes cluster, there are multiple ways to think about scaling your applications.
 
 . Scale the instances running the cluster, this is typically called *Cluster AutoScaling*.
@@ -72,7 +34,6 @@ Within a Kubernetes cluster, there are multiple ways to think about scaling your
 Both Cluster AutoScaling and Horizontal Pod Autoscaling provide different mechanisms to scale your entire architecture your way. This module will focus on Cluster Autoscaling.
 
 ==== Cluster AutoScaling
-
 Cluster autoscaling deals with how many physical EC2 instances are running in the cluster and how many resource requests are in the scheduler. How this works, in your `Deployment` you can define CPU and Memory requests and limits; when you scale this number it adds up all the request and verifies it has the capacity to fulfill all the requests. When you run Cluster Autoscaler it will listen to the scheduler and when it doesn't have enough resources it will reconfigure the desired instance count on the AWS AutoScaling Group causing it to provision more instances to fulfill the request.
 
 Lets deploy Cluster Autoscaler to your EKS cluster.
@@ -86,14 +47,20 @@ Step 1:: Switch to the tab where you have your Cloud9 `terminal` opened and chan
 cd ~/environment/aws-modernization-workshop-advanced/modules/container-elasticity
 ----
 +
-Step 2:: Get the autoscaling group name of for the worker nodes, to do this run the following command:
+Step 2:: Get the autoscaling group name of for the worker nodes and save it for later use. To do this run the following command:
 +
 [source,shell]
 ----
 ASG=$(aws autoscaling describe-auto-scaling-groups | jq -r '.AutoScalingGroups[] | select((.Tags[].Value == "owned") and (.Tags[].Key == "kubernetes.io/cluster/'$USER_NAME'-petstore")) .AutoScalingGroupName')
-
+----
++
+[source,shell]
+----
 echo "export ASG=${ASG}" >> ~/.bashrc
-
+----
++
+[source,shell]
+----
 echo $ASG
 ----
 +
@@ -310,13 +277,21 @@ If there is [underline]#no# output to the above command, make sure to re-run the
 [source,shell]
 ----
 INSTANCE_PROFILE_NAME=$(aws iam list-instance-profiles | jq -r '.InstanceProfiles[].InstanceProfileName' | grep nodegroup)
-
+----
+[source,shell]
+----
 INSTANCE_PROFILE_ARN=$(aws iam get-instance-profile --instance-profile-name $INSTANCE_PROFILE_NAME | jq -r '.InstanceProfile.Arn')
-
+----
+[source,shell]
+----
 ROLE_NAME=$(aws iam get-instance-profile --instance-profile-name $INSTANCE_PROFILE_NAME | jq -r '.InstanceProfile.Roles[] | .RoleName')
-
+----
+[source,shell]
+----
 echo "export ROLE_NAME=${ROLE_NAME}" >> ~/.bash_profile
-
+----
+[source,shell]
+----
 echo "export INSTANCE_PROFILE_ARN=${INSTANCE_PROFILE_ARN}" >> ~/.bash_profile
 ----
 +++ </div></details> +++

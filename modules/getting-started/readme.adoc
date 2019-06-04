@@ -6,17 +6,17 @@
 == Getting Started with the Workshop
 
 ****
-*Expected Outcomes:*
+*[underline]#Expected Outcomes#:*
 
 * Configure IDE Environment and Roles.
 * Update installed packages.
 * Install 3^rd^ Party applications.
 * Launch EKS Cluster.
 
-*Lab Requirements:*
+*[underline]#Lab Requirements#:*
 None
 
-*Average Lab Time:*
+*[underline]#Average Lab Time#:*
 15-20 minutes
 ****
 
@@ -26,33 +26,49 @@ image::cloud9-launch.png[Ope IDE]
 
 === Update IAM User Name Settings
 
-Throughout the workshop you will be tagging and naming resources that you create, in order to differentiate your resources from the other workshop attendess. Since the majority of the AWS resources being created will leverage the *AWS CLI*, we will automatically create a variable to substiture the *IAM User* name into these commands. Create `USER_NAME` variable by running the following command, substituting your [red yellow-background]#<User Name>#. To get started, open a new `terminal` by pressing the combination keys `[alt + t]` (Windows/Linux) or `[⌥ + t]` (Mac OS).
+Throughout the workshop you will be tagging and naming resources that you create, in order to differentiate your resources from the other workshop attendess. Since the majority of the AWS resources being created will leverage the *AWS CLI*, we will automatically create a variable to substiture the *IAM User* name provided into these commands.
 
-WARNING: The parameter value for [red yellow-background]#<User Name># [underline]#MUST# be lower case!
+To get started, open a new `terminal` by pressing the combination keys `[alt + t]` (Windows/Linux) or `[⌥ + t]` (Mac OS). Create a `USER_NAME` variable by running the following command, substituting your [red yellow-background]#<User Name># in place of [underline]#<LOWER CASE IAM USER NAME>#.
 
 [source,shell]
 ----
 export USER_NAME=<LOWER CASE IAM USER NAME>
-
-echo "export USER_NAME=$USER_NAME" >> ~/.bashrc
-
-source ~/.bashrc
 ----
 
+[TIP]
+====
+For example, if your *IAM User* name is *Bob*, the command will look as follows:
+[.output]
+.....
+export USER_NAME=bob
+.....
+====
+
+Confirm that your [red yellow-backgroun]#<User Name># has been configured correctly.
+[source,shell]
+----
+echo $USER_NAME
+----
+
+WARNING: The parameter value *[underline]#must#* be lower case!
+
+You will now save this vairable so that we can use it throughout the workshop.
+
+[source,shell]
+----
+echo "export USER_NAME=$USER_NAME" >> ~/.bashrc && source ~/.bashrc
+----
 
 === Update and install the necessary tools
 
-Now update the `AWS CLI` and `pip` packages, as well as other pre-installed packages. Once the new `terminal` is open, run the following commands:
+Now update the `AWS CLI` and other pre-installed packages by running the following command:
 [source,shell]
 ----
 sudo yum update -y && \
 sudo yum install -y jq gettext && \
-pip install --upgrade --user awscli pip
-
+pip install --upgrade --user awscli pip && \
 exec $SHELL
 ----
-
-=== Configure the AWS Environment
 
 After you have the installed the latest `awscli` and `pip` we need to configure our environment further.
 [source,shell]
@@ -62,17 +78,16 @@ aws configure set region us-west-2
 
 === Update the IAM Instance Profile
 
-Next thing we need to turn off the Managed Temporary credentials as the Cloud9 IDE needs to use the assigned IAM Instance profile.
-
-Open the *AWS Cloud9* menu, go to *Preferences*, then go to *AWS Settings*, and disable *AWS managed temporary credentials*, as depicted in the diagram below:
+Next we need to turn off the *AWS Managed Temporary credentials* as the Cloud9 IDE needs to use the assigned IAM Instance profile. Open the *AWS Cloud9* menu, go to *Preferences*, then go to *AWS Settings*, and disable *AWS managed temporary credentials*, as depicted in the diagram below:
 
 image::cloud9-credentials.png[Cloud9 Managed Credentials]
 
-=== Clone the source repository for this workshop
+=== Clone the source repository for this workshop.
 Now we want to clone the repository that contains all the content and files you need to complete this workshop.
 [source,shell]
 ----
-cd ~/environment && git clone https://github.com/darkreapyre/aws-modernization-workshop-advanced.git
+cd ~/environment && \
+git clone https://github.com/darkreapyre/aws-modernization-workshop.git
 ----
 
 === Installing 3rd Party CLIs
@@ -80,37 +95,38 @@ During the workshop we will be using a couple of 3^rd^ party CLI tools like `eks
 
 TIP: You can learn more about the `eksctl` tool from this link:https://aws.amazon.com/blogs/opensource/eksctl-eks-cluster-one-command/[blog] post.
 
-Step 1::
-Let's make a `bin` folder where these binaries will be stored and change our directory to the new location.
+Step 1:: Let's make a `bin` folder where these binaries will be stored and change our directory to the new location.
 +
 [source,shell]
 ----
 mkdir ~/bin && cd ~/bin
 ----
 +
-Step 2::
-Download the required `CLI` tools from their locations. Make them Runnable, and add them to our `$PATH`.
+Step 2:: Download the required 3^rd^ party `CLI` tools from their locations and make them "runnable", and add them to our `$PATH`.
 +
 [source,shell]
 ----
-curl -skL "https://github.com/weaveworks/eksctl/releases/download/latest_release/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp && mv /tmp/eksctl ~/bin/
-
+curl -skL "https://github.com/weaveworks/eksctl/releases/download/latest_release/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp && \
+mv /tmp/eksctl ~/bin/
+----
++
+[source,shell]
+----
 curl -skLo ~/bin/kubectl "https://amazon-eks.s3-us-west-2.amazonaws.com/1.12.7/2019-03-27/bin/linux/amd64/kubectl"
-
-curl -skLo ~/bin/aws-iam-authenticator "https://amazon-eks.s3-us-west-2.amazonaws.com/1.12.7/2019-03-27/bin/linux/amd64/aws-iam-authenticator"
-
-chmod -R +x ~/bin
-
-echo "export PATH=~/bin:\${PATH}" >> ~/.bashrc
-
+----
++
+[source,shell]
+----
+curl -skLo ~/bin/aws-iam-authenticator "https://amazon-eks.s3-us-west-2.amazonaws.com/1.12.7/2019-03-27/bin/linux/amd64/aws-iam-authenticator" && \
+chmod -R +x ~/bin && \
+echo "export PATH=~/bin:\${PATH}" >> ~/.bashrc &&\
 exec $SHELL
 ----
 
 === Launch an EKS Cluster
-It takes a few minutes to launch an EKS cluster, so we will have you launch one now, while completing some initial modules. We will launch our EKS Cluster using the `eksctl` tool.
+It takes a few minutes to launch an EKS cluster, so we will have you launch one now, so that the installation can complete while you continue with the some initial modules. We will launch our EKS Cluster using the `eksctl` tool.
 
-Step 1::
-`eksctl` requires an SSH Key to configure your EKS nodes with.
+Step 1:: `eksctl` requires an SSH Key to configure your EKS nodes with.
 +
 [source,shell]
 ----
@@ -120,16 +136,14 @@ ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa
 NOTE: When prompted to enter a passphrase, press [ENTER]
 +
 Step 2::
-Now that we have the key, let's launch the EKS Cluster.
+Now that we have the key, let's launch the EKS Cluster. Our *EKS* cluster will be called `[red yellow-background]#<User Name>#-petstore` and will consist of the default, four `m5.large` *EC2* instances.
 +
 [source,shell]
 ----
 eksctl create cluster --full-ecr-access --name=${USER_NAME}-petstore --nodes-min=2 --nodes-max=4
 ----
 +
-Step 3::
 You can expect to see an output like the one below...
-+
 [.output]
 ....
 [ℹ]  using region us-west-2

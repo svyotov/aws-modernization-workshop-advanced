@@ -31,7 +31,6 @@ The following *Reference Architecture* details the how the above AWS services wi
 image:architecture.png[Architecture]
 
 === Setting up the CI/CD Pipeline
-
 NOTE: The following section of the module assumes a working EKS cluster, created in *Amazon EKS* module.
 
 To start, we need to assign a *ServiceRole* to CodePipeline, as permissions for some aspects of the pipeline execution process are granted to another role type that acts on behalf of CodePipeline, like EKS, rather than to IAM users.
@@ -65,7 +64,7 @@ Example Output:
 }
 ----
 +
-Step 3:: Wait for the Template to finish deploying.
+Step 3:: Wait for the Template to finish deploying by running the following command:
 +
 [source,shell]
 ----
@@ -73,7 +72,6 @@ until [[ `aws cloudformation describe-stacks --stack-name "${USER_NAME}-cicd-rol
 ----
 
 ==== Create Container Repository
-
 As we saw with the other examples in this workshop, we will need to store our demo applications' docker containers, so next we'll create an AWS ECR respository for the application contianers by running the following command:
 
 [source,shell]
@@ -97,7 +95,6 @@ Example Output:
 ----
 
 ==== Create Source Version Control for the Demo Applicaiton
-
 Step 1:: Next we will create an AWS CodeCommit repository to store the source code for our sample EKS project. This is the source code for the application we are "developing" and will eventually push to "production" using our CI/CD Pipeline. Execute the following command in the Ckoud9 `terminal`.
 +
 [source,shell]
@@ -129,25 +126,41 @@ Step 2:: Next we will commit out sample application to the CodeCommit reposutory
 [source,shell]
 ----
 git config --global credential.helper '!aws codecommit credential-helper $@'
-
+----
++
+[source,shell]
+----
 git config --global credential.UseHttpPath true
-
+----
++
+[source,shell]
+----
 git clone https://git-codecommit.us-west-2.amazonaws.com/v1/repos/${USER_NAME}-cicd-demo-repo
-
+----
++
+[source,shell]
+----
 cp ./sample-app/* ${USER_NAME}-cicd-demo-repo/
-
+----
++
+[source,shell]
+----
 cd ${USER_NAME}-cicd-demo-repo
-
+----
++
+[source,shell]
+----
 git add . && git commit -m "initial commit of sample app" && git push origin master
 ----
 
 ==== Create the CI/CD Pipeline
-
 Step 1:: Now that we have a place to store our docker container, a source code repository and the necessary Service roles, we can create our CI/CD Pipeline. Open a broweser tab and navigate to the link:https://us-west-2.console.aws.amazon.com/codesuite/codepipeline/pipelines[AWS CodePipeline] Service Console. Click on *Create pipeline*.
 +
 image:create-pipeline.png[Create Pipeline]
 +
-Step 2:: After the *Create new pipline* wizard opens, the first step is to configure the *Pipeline settings*. Enter `[red yellow-background]#<User Name>#-CICD-Demo` as the *Pipeline name*. Select *Existing service role* and from the drop-down, select the IAM role we created in *Step 2*.
+Step 2:: After the *Create new pipline* wizard opens, the first step is to configure the *Pipeline settings*. Enter `[red yellow-background]#<User Name>#-CICD-Demo` (_substituting your unique user name_), as the *Pipeline name*.
++
+Select *Existing service role* and from the drop-down, select the IAM role we created in *Step 2*.
 +
 NOTE: The *Role name* should start with `[red yellow-background]#<User Name>#-cicd-roles-CodepipleServiceRole-...`.
 +
@@ -161,7 +174,7 @@ image:pipeline-settings.png[Pipeline Settings]
 +
 Step 5:: Next we'll configure the *Source stage*. Click the drop-down and select *AWS CodeCommit* as the *Source provider*.
 +
-Step 6:: For the *Repository name*, click the drop-down to select the repository we created in *Step 4*, `[red yellow-background]#<User Name>#-cicd-demo-repo`.
+Step 6:: For the *Repository name*, click the drop-down to select the repository we created in *Step 4*.
 +
 Step 7:: Select the `master` branch from the drop-down for *Branch name*.
 +
@@ -173,7 +186,7 @@ Step 9:: Now we configure the *Build stage*. Click the drop-down and select *AWS
 +
 image:create-project.png[Create Build]
 +
-Step 10:: A new browser window will open to create a new build project. Under the *Project configuration* section, enter `[red yellow-background]#<User Name>#-build-project` as the *Project name* and provide an optional *Description*.
+Step 10:: A new browser window will open to create a new build project. Under the *Project configuration* section, enter `[red yellow-background]#<User Name>#-build-project` as the *Project name* (_substituting your unique user name_) and provide an optional *Description*.
 +
 image:build-project.png[Project Name]
 +
@@ -198,7 +211,7 @@ image:build-environment.png[Build Environment]
 Step 17:: Expand the *Additional configuration* section and add the following *Environmental variables* as the `Name`:
 +
 * `AWS_ACCOUNT_ID` - Add your 12 digit AWS Account provided as the value.
-* `IMAGE_REPO_NAME` - Add `[red yellow-background]#<User Name>#-cicd-repo` as the value.
+* `IMAGE_REPO_NAME` - Add `[red yellow-background]#<User Name>#-cicd-repo` as the value (_substituting your unique user name_).
 +
 IMPORTANT: Make sure there are no spaces in any of the values entered!
 +
@@ -360,9 +373,9 @@ Step 7:: Select *AWS Lambda* as the *Action provider*.
 +
 Step 8:: For the *Input artifacts*, select the *BuildArtifact* as the previous stage to our Deploy stage.
 +
-Step 9:: From the *Function name* drop-down box, select the `[red yellow-background]#<User Name>#-LambdaKubeClient` funciton that was created in the previous section.
+Step 9:: From the *Function name* drop-down box, select the `[red yellow-background]#<User Name>#-LambdaKubeClient` funciton that was created in the previous section (_substituting your unique user name_).
 +
-Step 10:: In order to tell the function where to get the Demo Application docker image, enter `[red yellow-background]#<User Name>#-cicd-repo` as a lambda event parameter to our deployment lambda function.
+Step 10:: In order to tell the function where to get the Demo Application docker image, enter `[red yellow-background]#<User Name>#-cicd-repo` as a lambda event parameter to our deployment lambda function (_substituting your unique user name_).
 +
 Step 11:: Click on the *Done* button to save our action configuration.
 +
@@ -390,3 +403,5 @@ Example Output:
 NAME                 DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE    CONTAINERS           IMAGES                                                                   SELECTOR
 eks-cicd-demo-repo   1         1         1            1           124m   eks-cicd-demo-repo   <REDACTED>>.dkr.ecr.us-west-2.amazonaws.com/eks-cicd-demo-repo:latest   name=eks-cicd-demo-repo
 ----
+
+Feel free to make some code changes to the application source and and see those changes get driven into production using your new CI/CD pipeline.

@@ -6,15 +6,15 @@
 == Modern Container Application on EKS
 
 ****
-*Expected Outcome:*
+*[underline]#Expected Outcome#:*
 
 * Build the Pet Store application within a Container.
 * Deploy the Pet Store application to a Wildfly based Application Server.
 
-*Lab Requirements:*
+*[underline]#Lab Requirements#:*
 Cloud9 IDE
 
-*Average Lab Time:*
+*[underline]#Average Lab Time#:*
 30-45 minutes
 ****
 
@@ -42,7 +42,7 @@ The second stage of our Dockerfile will be to build our Wildfly application serv
 +
 The *jPetstore* application requires the *PostrgeSQL* driver. We install that during image build by declaring a `RUN` statement in the Dockerfile.
 +
-Step 3:: To build the application we will execute the following Docker commands from the `terminal` in our CLoud9 IDE. Make sure the terminal session current working directory is `~/environment/aws-modernization-workshop-advanced/modules/containerize-application/` working directory, by running the following command in the `terminal`.
+Step 3:: To build the application we will execute the following Docker commands from the `terminal` in our CLoud9 IDE. Make sure the terminal session current working directory is `~/environment/aws-modernization-workshop-advanced/modules/containerize-application/` working directory, by running the following command in the Cloud9 IDE `terminal`.
 +
 [source,shell]
 ----
@@ -65,7 +65,7 @@ Step 5:: We can review that we have the all the neccessary container images by r
 docker images
 ----
 +
-Expected Output:
+Example Output:
 +
 [.output]
 ----
@@ -93,7 +93,7 @@ CloudFormation creates the following resources:
 * `PetStorePostgreSQLRepository` - ECR Respository for PostgresSQL containers.
 * `PetStoreFrontendRepository` - ECR Repository for the front-end containers.
 ****
-Step 1:: We need to replace the placeholder for user name in the template file, so as to distinguish tour ECR Repository from those used by the other Workshop attendees.
+Step 1:: We need to replace the placeholder for user name in the template file, so as to distinguish your ECR Repository from those used by the other Workshop attendees. The following command will replace the *[underline]#<UserName>#* parameter with your unique user name.
 +
 [source,shell]
 ----
@@ -109,7 +109,7 @@ aws cloudformation create-stack --stack-name "${USER_NAME}-petstore-ecr" \
 --capabilities CAPABILITY_NAMED_IAM
 ----
 +
-Step 3:: Wait for the Template to finish deploying.
+Step 3:: Wait for the Template to finish deploying byt running the following command:
 +
 [source,shell]
 ----
@@ -164,7 +164,10 @@ Step 3:: Tag the local docker images with the locations of the remote ECR reposi
 [source,shell]
 ----
 docker tag postgres:9.6 $(aws ecr describe-repositories --repository-name ${USER_NAME}-petstore_postgres --query=repositories[0].repositoryUri --output=text):latest
-
+----
++
+[source,shell]
+----
 docker tag containerize-application_petstore:latest $(aws ecr describe-repositories --repository-name ${USER_NAME}-petstore_frontend --query=repositories[0].repositoryUri --output=text):latest
 ----
 +
@@ -173,7 +176,10 @@ Step 4:: Once the images have been tagged, push them to the remote repository.
 [source,shell]
 ----
 docker push $(aws ecr describe-repositories --repository-name ${USER_NAME}-petstore_postgres --query=repositories[0].repositoryUri --output=text):latest
-
+----
++
+[source,shell]
+----
 docker push $(aws ecr describe-repositories --repository-name ${USER_NAME}-petstore_frontend --query=repositories[0].repositoryUri --output=text):latest
 ----
 +
@@ -220,7 +226,7 @@ Before we get started, here are some terms you need to understand in order to de
 
 To use Amazon EKS or any Kubernetes cluster you must write a manifest or a config file, these config files are used to declaritively document what is needed to deploy an individual application. More information can be found https://kubernetes.io/docs/concepts/workloads/controllers/deployment/[here].
 
-Step 1:: Open the `petstore-eks-manifest.yaml` file by double clicking the filename in the lefthand navigation of the Cloud9 IDE. The file has the following contents:
+Step 1:: Open the `petstore-eks-manifest.yaml` file by double clicking the filename in the left-hand navigation of the Cloud9 IDE. The file has the following contents:
 +
 [source,yaml]
 ----
@@ -381,15 +387,21 @@ items:
 +
 NOTE: Amazon EKS clusters that were created prior to Kubernetes version 1.11 were not created with any storage classes. Since we are running the version `1.12`, the default `StorageClass` has already been set to link:https://aws.amazon.com/ebs/[Amazon Elastic Block Store (EBS)]. Therefore there is no `StorageClass` definition int he `petstore-eks-manifest.yaml` file.
 +
-Step 2:: Close the `petstore-eks-manifest.yaml`. Run the following commands in the Cloud9 IDE `terminale` to replace the *<YourAccountID>* as well as *<UserName>* placeholders with your AWS Account ID and unique AWS IAM 
+Step 2:: Close the `petstore-eks-manifest.yaml`. Run the following commands in the Cloud9 IDE `terminale` to replace the *[underline]#<YourAccountID>#* as well as *[underline]#<UserName>#* placeholders in the manifest file, with your AWS Account ID and unique AWS IAM 
 User.
 +
 [source,shell]
 ----
 ACCOUNT_ID=$(aws sts get-caller-identity --output text --query 'Account')
-
+----
++
+[source,shell]
+----
 sed -i "s/<YourAccountID>/${ACCOUNT_ID}/" petstore-eks-manifest.yaml
-
+----
++
+[source,shell]
+----
 sed -i "s/<UserName>/${USER_NAME}/" petstore-eks-manifest.yaml
 ----
 +
@@ -432,7 +444,7 @@ Step 4:: Now that the scheduler knows that you want to run this application, it 
 kubectl get pods --namespace petstore --watch
 ----
 +
-Expected Output:
+Example Output:
 +
 [.output]
 ....
@@ -449,7 +461,7 @@ Step 5:: Once the *STATUS* changes to *Running* for all 3 of your containers we 
 kubectl get services --namespace petstore -o wide
 ----
 +
-Expected Output:
+Example Output:
 +
 [.output]
 ....
@@ -458,7 +470,7 @@ frontend   LoadBalancer   10.100.20.251   ac7059d97a51611e88f630213e88d018-20932
 postgres   ClusterIP      None            <none>                                                                    5432/TCP                                    6m
 ....
 +
-Step 5:: Here we can see that we're exposing the *frontend* using an ELB, which is available at the *EXTERNAL-IP* field. Copy and paste this into a new browser tab. You should see the following web application:
+Step 6:: Here we can see that we're exposing the *frontend* using an ELB, which is available at the *EXTERNAL-IP* field. Copy and paste this into a new browser tab. You should see the following web application:
 +
 image:preview.png[Preview]
 

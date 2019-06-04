@@ -33,7 +33,7 @@ Parameters:
     Description: The instance type of the new Amazon EC2 instance that AWS Cloud9
       will launch for the development environment (for example, 't2.micro').
     Type: String
-    Default: t2.micro
+    Default: t2.large
     AllowedValues:
     - t2.micro
     - t2.small

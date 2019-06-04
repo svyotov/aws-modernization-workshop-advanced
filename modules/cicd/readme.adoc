@@ -121,7 +121,7 @@ Example Output:
 }
 ----
 +
-Step 2:: Next we will commit out sample application to the CodeCommit reposutory created above, by running the following commands:
+Step 2:: Next we will commit our sample application to the CodeCommit reposutory created above, by running the following commands:
 +
 [source,shell]
 ----
@@ -246,11 +246,20 @@ Step 2:: Next we will add some of our EKS parameters to the lambda configuration
 [source,shell]
 ----
 sed -i -e "s#\$EKS_CA#$(aws eks describe-cluster --name ${USER_NAME}-petstore --query cluster.certificateAuthority.data --output text)#g" ./config
-
+----
++
+[source,shell]
+----
 sed -i -e "s#\$EKS_CLUSTER_HOST#$(aws eks describe-cluster --name ${USER_NAME}-petstore --query cluster.endpoint --output text)#g" ./config
-
+----
++
+[source,shell]
+----
 sed -i -e "s#\$EKS_CLUSTER_NAME#${USER_NAME}-petstore#g" ./config
-
+----
++
+[source,shell]
+----
 sed -i -e "s#\$EKS_CLUSTER_USER_NAME#lambda#g" ./config
 ----
 +
@@ -267,8 +276,7 @@ Step 3:: Next we create a link:https://kubernetes.io/docs/concepts/configuration
 +
 [source,shell]
 ----
-SECRET_NAME=$(kubectl get secrets -o json | jq -r '.items[].metadata["name"]')
-
+SECRET_NAME=$(kubectl get secrets -o json | jq -r '.items[].metadata["name"]') && \
 echo $SECRET_NAME
 ----
 +
@@ -291,11 +299,20 @@ Step 5:: Next we build out lamabda function, package the necessary Javascript re
 [source,shell]
 ----
 npm install
-
+----
++
+[source,shell]
+----
 zip -r lambda-package_v1.zip .
-
+----
++
+[source,shell]
+----
 export LAMBDA_SERVICE_ROLE=$(aws cloudformation describe-stacks --stack-name ${USER_NAME}-cicd-roles | jq -r '.Stacks[0].Outputs[]|select(.OutputKey=="LambdaExecutionRoleArn")|.OutputValue')
-
+----
++
+[source,shell]
+----
 aws lambda create-function --function-name ${USER_NAME}-LambdaKubeClient \
 --runtime nodejs8.10 --role $LAMBDA_SERVICE_ROLE --handler index.handler  \
 --zip-file fileb://lambda-package_v1.zip --timeout 10 --memory-size 128

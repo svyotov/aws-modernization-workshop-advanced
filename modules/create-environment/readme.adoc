@@ -31,6 +31,10 @@ image:deploy-to-aws.png["Deploy to AWS",align="left",link="https://console.aws.a
 +
 Step 2:: Provide a unique *Stack name* by replacing *[underline]#<USER NAME>#* with your IAM User Name to the beginning of `AWSModernizationWorkshop`.
 +
+image:tag.png[Username]
++
+This will allow you to differentiate your resources from other Woskhop attendees.
++
 [TIP]
 ====
 For example, if your *IAM User* name is *Bob*, the *Stack name* parameter will look as follows:
@@ -39,10 +43,6 @@ For example, if your *IAM User* name is *Bob*, the *Stack name* parameter will l
 bob-AWSModernizationWorkshop
 .....
 ====
-+
-This will allow you to differentiate your resources from other Woskhop attendees.
-+
-image:tag.png[Username]
 +
 Step 3:: Select `t2.large` as the *Cloud9 Instance type*.
 +

@@ -87,7 +87,7 @@ Now we want to clone the repository that contains all the content and files you 
 [source,shell]
 ----
 cd ~/environment && \
-git clone https://github.com/darkreapyre/aws-modernization-workshop.git
+git clone https://github.com/darkreapyre/aws-modernization-workshop-advanced.git
 ----
 
 === Installing 3rd Party CLIs

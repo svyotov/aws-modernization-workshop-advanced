@@ -18,18 +18,22 @@
 ****
 
 === Workshop Introduction
-
 Welcome to the workshop on AWS Digital Modernization. The steps outlined below will allow you to quickly create an environment that will allow you to work with the instructions contained througout this workshop.
 
 NOTE: If you do not recive an e-mail with the *AWS Account* and *IAM User*, please see the AWS Instructor.
 
 === Create the Workshop environment using CloudFormation
+Throughout the workshop you will be tagging and naming resources that you create so as to differentiate your resources from the other workshop attendess.
 
-Step 1:: Log into the *AWS account* with the *IAM User* credentials provided to you and click *Deploy to AWS*:
+To effectivley differentiate  your AWS resources, you will need to come up with a unique user name. The unique user name must be [underline]#seven# characters in length. 
+
+During the workshop, we will refer to this unique username with the *[red yellow-background]#<USER_NAME>#* parameter. So whenever you see this, substitute your unique user name.
+
+Step 1:: To get started, log into the *AWS account* with the *IAM User* name (_[underline]#NOT# your unique user name_), that was provided to you by the AWS Instructor, and click *Deploy to AWS*:
 +
 image:deploy-to-aws.png["Deploy to AWS",align="left",link="https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create/review?stackName=<USER NAME>-AWSModernizationWorkshop&templateURL=https://s3-us-west-2.amazonaws.com/500842391574-trimble-workshop-us-west-2/create-environment/templates/workshop_env_master.yaml"]
 +
-Step 2:: Provide a unique *Stack name* by replacing *[underline]#<USER NAME>#* with your IAM User Name to the beginning of `AWSModernizationWorkshop`.
+Step 2:: Provide a unique *Stack name* by replacing *[underline]#<USER NAME>#* with your unique user name to the beginning of `AWSModernizationWorkshop`.
 +
 image:tag.png[Username]
 +
@@ -37,7 +41,7 @@ This will allow you to differentiate your resources from other Woskhop attendees
 +
 [TIP]
 ====
-For example, if your *IAM User* name is *Bob*, the *Stack name* parameter will look as follows:
+For example, if your unique user name is *Bob*, the *Stack name* parameter will look as follows:
 [.output]
 .....
 bob-AWSModernizationWorkshop

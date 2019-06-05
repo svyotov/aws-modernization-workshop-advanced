@@ -24,20 +24,20 @@ In order for you to successfully complete the workshop, we need you to run throu
 
 image::cloud9-launch.png[Ope IDE]
 
-=== Update IAM User Name Settings
+=== Update Unique User Name Settings
 
-Throughout the workshop you will be tagging and naming resources that you create, in order to differentiate your resources from the other workshop attendess. Since the majority of the AWS resources being created will leverage the *AWS CLI*, we will automatically create a variable to substiture the *IAM User* name provided into these commands.
+Throughout the workshop you will be tagging and naming resources that you create, in order to differentiate your resources from the other workshop attendess. Since the majority of the AWS resources being created will leverage the *AWS CLI*, we will automatically create a variable to substiture your unique user name into these commands.
 
-To get started, open a new `terminal` by pressing the combination keys `[alt + t]` (Windows/Linux) or `[⌥ + t]` (Mac OS). Create a `USER_NAME` variable by running the following command, substituting your [red yellow-background]#<User Name># in place of [underline]#<LOWER CASE IAM USER NAME>#.
+To get started, open a new `terminal` by pressing the combination keys `[alt + t]` (Windows/Linux) or `[⌥ + t]` (Mac OS). Create a `USER_NAME` variable by running the following command, substituting your [red yellow-background]#<User Name># in place of [underline]#<LOWER CASE UNIQUE USER NAME>#.
 
 [source,shell]
 ----
-export USER_NAME=<LOWER CASE IAM USER NAME>
+export USER_NAME=<LOWER CASE UNIQUE USER NAME>
 ----
 
 [TIP]
 ====
-For example, if your *IAM User* name is *Bob*, the command will look as follows:
+For example, if your unique user name is *Bob*, the command will look as follows:
 [.output]
 .....
 export USER_NAME=bob
@@ -50,9 +50,9 @@ Confirm that your [red yellow-backgroun]#<User Name># has been configured correc
 echo $USER_NAME
 ----
 
-WARNING: The parameter value *[underline]#must#* be lower case!
+WARNING: Confirm that the parameter value is *[underline]#lower case#*!
 
-You will now save this vairable so that we can use it throughout the workshop.
+You will now save this variable so that we can use it throughout the workshop.
 
 [source,shell]
 ----

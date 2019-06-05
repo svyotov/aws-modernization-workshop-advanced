@@ -25,8 +25,7 @@ In order for you to successfully complete the workshop, we need you to run throu
 image::cloud9-launch.png[Ope IDE]
 
 === Update Unique User Name Settings
-
-Throughout the workshop you will be tagging and naming resources that you create, in order to differentiate your resources from the other workshop attendess. Since the majority of the AWS resources being created will leverage the *AWS CLI*, we will automatically create a variable to substiture your unique user name into these commands.
+Since the majority of the AWS resources being created will leverage the *AWS CLI*, we will automatically create a variable to substitute your unique user name into these commands.
 
 To get started, open a new `terminal` by pressing the combination keys `[alt + t]` (Windows/Linux) or `[⌥ + t]` (Mac OS). Create a `USER_NAME` variable by running the following command, substituting your [red yellow-background]#<User Name># in place of [underline]#<LOWER CASE UNIQUE USER NAME>#.
 

@@ -126,7 +126,7 @@ Step 1:: Log into your Amazon ECR registry using the helper provided by the AWS 
 $(aws ecr get-login --no-include-email)
 ----
 
-NOTE: Ignore any `WARNNING` messages.
+NOTE: Ignore any `WARNING` messages.
 
 Step 2:: Use the AWS CLI to get information about the two Amazon ECR repositories that were created for you by the CloudFormation template. One repository will be for the Petstore PostgreSQL backend and the other will be for the Petstore web frontend.
 +
@@ -387,7 +387,7 @@ items:
 +
 NOTE: Amazon EKS clusters that were created prior to Kubernetes version 1.11 were not created with any storage classes. Since we are running the version `1.12`, the default `StorageClass` has already been set to link:https://aws.amazon.com/ebs/[Amazon Elastic Block Store (EBS)]. Therefore there is no `StorageClass` definition int he `petstore-eks-manifest.yaml` file.
 +
-Step 2:: Close the `petstore-eks-manifest.yaml`. Run the following commands in the Cloud9 IDE `terminale` to replace the *[underline]#<YourAccountID>#* as well as *[underline]#<UserName>#* placeholders in the manifest file, with your AWS Account ID and unique AWS IAM 
+Step 2:: Close the `petstore-eks-manifest.yaml`. Run the following commands in the Cloud9 IDE `terminal` to replace the *[underline]#<YourAccountID>#* as well as *[underline]#<UserName>#* placeholders in the manifest file, with your AWS Account ID and unique AWS IAM 
 User.
 +
 [source,shell]

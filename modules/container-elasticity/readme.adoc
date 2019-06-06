@@ -401,6 +401,8 @@ To see this applied you can get the `node` `annotations` using the following com
 kubectl get node $(kubectl get pod -n kube-system -o jsonpath="{.items[0].spec.nodeName}" -l app=cluster-autoscaler) -o jsonpath="{.metadata.annotations}"
 ----
 +
+Expected Output:
++
 [.output]
 ....
 map[cluster-autoscaler.kubernetes.io/scale-down-disabled:true node.alpha.kubernetes.io/ttl:0 volumes.kubernetes.io/controller-managed-attach-detach:true]
@@ -424,6 +426,4 @@ TIP: Leveraging link:https://aws.amazon.com/ec2/spot/[Amazon EC2 Spot Instances]
 
 ==== Horizontal Pod Autoscaling
 
-The other kind of elasticity that you have when you use Kubernetes or EKS is Horizontal Pod AutoScaling, or HPA for short. This is a capability where HPA will provision more pods based on the existing pods being constrained by some resource usually CPU, Memory, Request Throughput etc. As of today, this doesn't work on EKS but will be supported very shortly.
-
-To get started with HPA check out the official documentation about link:https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/[Horizontal Pod Autoscaling].
+The other kind of elasticity that you have when you use Kubernetes or EKS is Horizontal Pod AutoScaling, or HPA for short. This is a capability where HPA will provision more pods based on the existing pods being constrained by some resource usually CPU, Memory, Request Throughput etc. We will not be covering HPA in this workshop, but check out the official documentation about link:https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/[Horizontal Pod Autoscaling].

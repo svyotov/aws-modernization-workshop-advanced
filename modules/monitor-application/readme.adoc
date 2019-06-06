@@ -671,7 +671,7 @@ kube-proxy-r84rb           1/1     Running   0          4h
 +
 Step 8:: Now we can view the CloudWatch log streams for the containers in our `kube-system`. To do this, open a browser tab and navigate to the link:https://us-west-2.console.aws.amazon.com/cloudwatch/[CloudWatch Console] and click *Logs* in the navigation pane. All the CloudWatch Log Groups will be displayed.
 +
-Step 9:: In the *Filter:* box, enter `eks` and press `[ENTER]` to filter the Log Group for our EKS cluster. Click on the `/eks/*[red yellow-background]#<USER_NAME>#*/containers` Log Group.
+Step 9:: In the *Filter:* box, enter `/eks` and press `[ENTER]` to filter the Log Group for our EKS cluster. Click on the `/eks/*[red yellow-background]#<USER_NAME>#*/containers` Log Group.
 +
 image:cw-logs.png[Log Group]
 +

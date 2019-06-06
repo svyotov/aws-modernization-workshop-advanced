@@ -14,7 +14,7 @@
 
 * an Amazon Elastic Container Service for Kubernetes Cluster with:
 ** `petstore` deployment.
-** application monitoring has been confgiured.
+** application monitoring has been configured.
 
 * Cloud9 IDE.
 
@@ -34,9 +34,9 @@ Within a Kubernetes cluster, there are multiple ways to think about scaling your
 Both Cluster AutoScaling and Horizontal Pod Autoscaling provide different mechanisms to scale your entire architecture your way. This module will focus on Cluster Autoscaling.
 
 ==== Cluster AutoScaling
-Cluster autoscaling deals with how many physical EC2 instances are running in the cluster and how many resource requests are in the scheduler. How this works, in your `Deployment` you can define CPU and Memory requests and limits; when you scale this number it adds up all the request and verifies it has the capacity to fulfill all the requests. When you run Cluster Autoscaler it will listen to the scheduler and when it doesn't have enough resources it will reconfigure the desired instance count on the AWS AutoScaling Group causing it to provision more instances to fulfill the request.
+Cluster autoscaling deals with how many physical EC2 instances are running in the cluster and how many resource requests are in the scheduler. How this works, in your `Deployment` you can define CPU and Memory requests and limits; when you scale this number, it adds up all the request and verifies it has the capacity to fulfill all the requests. When you run Cluster Autoscaler it will listen to the scheduler and when it doesn't have enough resources it will reconfigure the desired instance count on the AWS AutoScaling Group causing it to provision more instances to fulfill the request.
 
-Lets deploy Cluster Autoscaler to your EKS cluster.
+Let's deploy Cluster Autoscaler to your EKS cluster.
 
 NOTE: The following section of the module assumes a working EKS cluster, created in the *Modern Container Application on EKS* module.
 
@@ -71,7 +71,7 @@ Example Output:
 eksctl-petstore-nodegroup-ng-4897f70e-NodeGroup-1R9B6MYESB2Z1
 ----
 +
-Step 3:: Open the *cluster-autoscaler.yaml* file by double clicking the filename in the lefthand navigation in the Cloud9 IDE.  The file has the following contents:
+Step 3:: Open the *cluster-autoscaler.yaml* file by double clicking the filename in the left-hand navigation in the Cloud9 IDE.  The file has the following contents:
 +
 [source,json]
 ----
@@ -297,7 +297,7 @@ echo "export INSTANCE_PROFILE_ARN=${INSTANCE_PROFILE_ARN}" >> ~/.bash_profile
 +++ </div></details> +++
 ====
 +
-Step 7:: With the output from the cli you can then use the `put-role-policy` AWS CLI command to enable the autoscaler with the ability to control the ASG. In the lefthand navigation pane of the Cloud9 IDE, open the `modules/container-elasticity/ca-policy.json` file. The file has the following contents:
+Step 7:: With the output from the cli you can then use the `put-role-policy` AWS CLI command to enable the Autoscaler with the ability to control the ASG. In the left-hand navigation pane of the Cloud9 IDE, open the `modules/container-elasticity/ca-policy.json` file. The file has the following contents:
 +
 [source,json]
 ----
@@ -360,7 +360,7 @@ I0824 19:47:29.223632       1 static_autoscaler.go:337] ip-192-168-229-57.us-wes
 I0824 19:47:29.223668       1 static_autoscaler.go:352] Scale down status: unneededOnly=true lastScaleUpTime=2018-08-24 19:44:18.175190509 +0000 UTC lastScaleDownDeleteTime=2018-08-24 19:37:17.283607196 +0000 UTC lastScaleDownFailTime=2018-08-24 19:37:17.283607245 +0000 UTC schedulablePodsPresent=false isDeleteInProgress=false
 ....
 +
-In the logs here you can see that it is constantly checkin the amount of nodes and capactiy each node has available, if we have too many requests for resources and not enough availabe it will provision new nodes for you. Let's try this.
+In the logs, you can see that it is constantly checking the amount of nodes and capacity each node has available, if we have too many requests for resources and not enough available it will provision new nodes for you. Let's try this.
 +
 Step 9:: First we need to scale our `deployment` using the `scale` subcommand for `kubectl`.  Press `[Ctrl + c]` to stop to stop the logs and run the following command:
 +
@@ -376,7 +376,7 @@ Expected Output:
 deployment.extensions/frontend scaled
 ....
 +
-Step 10:: Now we should again log the `cluster-autoscaler` pod and you will see it has update the `desired` count of instances to reflect that.
+Step 10:: Now we should again log the `cluster-autoscaler` pod and you will see it has updated the `desired` count of instances to reflect that.
 +
 [source,shell]
 ----
@@ -406,7 +406,7 @@ kubectl get node $(kubectl get pod -n kube-system -o jsonpath="{.items[0].spec.n
 map[cluster-autoscaler.kubernetes.io/scale-down-disabled:true node.alpha.kubernetes.io/ttl:0 volumes.kubernetes.io/controller-managed-attach-detach:true]
 ....
 +
-Step 12:: Now that we have the instance cordoned from `down scaling` we can then `scale` the `--replicas` to `2` by issueing the folling commanbd:
+Step 12:: Now that we have the instance cordoned from `down scaling` we can then `scale` the `--replicas` to `2` by issuing the following command:
 +
 [source,shell]
 ----
@@ -424,6 +424,6 @@ TIP: Leveraging link:https://aws.amazon.com/ec2/spot/[Amazon EC2 Spot Instances]
 
 ==== Horizontal Pod Autoscaling
 
-The other kind of elasticity that you have when you use Kubernete or EKS is Horizontal Pod AutoScaling, or HPA for short. This is a capability where HPA will provision more pods based on the existin pods being contrainted by some resource usually CPU, Memory, Request Throughput etc. As of today this doesn't work on EKS but will be supported very shortly.
+The other kind of elasticity that you have when you use Kubernetes or EKS is Horizontal Pod AutoScaling, or HPA for short. This is a capability where HPA will provision more pods based on the existing pods being constrained by some resource usually CPU, Memory, Request Throughput etc. As of today, this doesn't work on EKS but will be supported very shortly.
 
-To get started with HPA check out the official documentation about link:https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/[Horizontal Pod Autoscaling]
+To get started with HPA check out the official documentation about link:https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/[Horizontal Pod Autoscaling].

@@ -21,7 +21,7 @@ Cloud9 IDE
 === Introduction
 The Pet Store application is a Java 7 based application that runs on top of the Wildfly (JBoss) application server. The application is built using Maven. We will walk through the steps to build the application using a Maven container then deploy our WAR file to the Wildfly container. We will be using multi-stage builds to facilitate creating a minimal docker container.
 
-Then we will push the container to link:https://aws.amazon.com/ecr/[Amazon Elastic Container Registry (ECR)] and finally deploy it to link:http://aws.amazon.com/eks/[mazon Elastic Container Service for Kubernetes (Amazon EKS)].
+Then we will push the container to link:https://aws.amazon.com/ecr/[Amazon Elastic Container Registry (ECR)] and finally deploy it to link:http://aws.amazon.com/eks/[Amazon Elastic Container Service for Kubernetes (Amazon EKS)].
 
 === Building the Dockerfile
 
@@ -51,14 +51,14 @@ docker build -t containerize-application_petstore:latest .
 +
 NOTE: The container build should take around 15 minutes complete.
 +
-Step 4:: As mentioned, the *jPetstore* application requires a databse. We will use the official *PostgreSQL* image available from Docker Hub. The following command will pull the official image.
+Step 4:: As mentioned, the *jPetstore* application requires a database. We will use the official *PostgreSQL* image available from Docker Hub. The following command will pull the official image.
 +
 [source,shell]
 ----
 docker pull postgres:9.6
 ----
 +
-Step 5:: We can review that we have the all the neccessary container images by runnming the following command:
+Step 5:: We can review that we have the all the necessary container images by running the following command:
 +
 [source,shell]
 ----
@@ -81,7 +81,7 @@ jboss/wildfly                       11.0.0.Final        a12aa93a45f7        3 mo
 maven                               3.5-jdk-7           5f03adaf2bbf        7 months ago        483MB
 ----
 
-=== Push the aplication containers to ECR
+=== Push the application containers to ECR
 Next, we're going to take our already containerized applications and push them to link:https://aws.amazon.com/ecr/[Amazon Elastic Container Registry (ECR)]. Amazon ECR is a fully-managed Docker container registry that makes it easy for developers to store, manage, and deploy Docker container images. Amazon ECR is integrated with Amazon Elastic Container Service (ECS), simplifying your development to production workflow.
 
 ==== Deploy ECR Repositories
@@ -224,7 +224,7 @@ Before we get started, here are some terms you need to understand in order to de
 
 ===== Amazon EKS and Kubernetes Manifests
 
-To use Amazon EKS or any Kubernetes cluster you must write a manifest or a config file, these config files are used to declaritively document what is needed to deploy an individual application. More information can be found https://kubernetes.io/docs/concepts/workloads/controllers/deployment/[here].
+To use Amazon EKS or any Kubernetes cluster you must write a manifest or a config file, these config files are used to declaratively document what is needed to deploy an individual application. More information can be found https://kubernetes.io/docs/concepts/workloads/controllers/deployment/[here].
 
 Step 1:: Open the `petstore-eks-manifest.yaml` file by double clicking the filename in the left-hand navigation of the Cloud9 IDE. The file has the following contents:
 +
@@ -430,7 +430,7 @@ As you can see above this manifest created and configured several components in 
 [options="header"]
 |=======================
 | Primitive | Description
-| *Namespace* | Namespaces are meant to be virtual clusters within a larger pysical cluster.
+| *Namespace* | Namespaces are meant to be virtual clusters within a larger physical cluster.
 | *PersistentValue* | Persistent Volume (PV) is a piece of storage that has been provisioned by an administrator. _These are cluster wide resources._
 | *PersistentVolumeClaim* | Persistent Volume Claim (PVC) is a request for storage by a user.
 | *Service* | Service is an abstraction which defines a logical set of Pods and a policy by which to access them.

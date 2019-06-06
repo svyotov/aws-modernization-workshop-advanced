@@ -8,7 +8,7 @@
 ****
 *[underline]#Expected Outcome#:*
 
-* 300 level understaing of Kubernetes Continuous Deployment:
+* 300 level understanding of Kubernetes Continuous Deployment:
 ** Create a source code repository using AWS CodeCommit.
 ** Configure a CI/CD pipeline using AWS CodePipeline.
 ** Deploy AWS CodeBuild to build your container image and push to ECS.
@@ -23,11 +23,11 @@
 ****
 
 === Introduction
-This module is designed to improve your undesrtanding of the link:https://aws.amazon.com/codestar/[AWS Code*] services like, link:https://aws.amazon.com/codecommit/[AWS CodeCommit], link:https://aws.amazon.com/codebuild/[AWS CodeBuild], link:https://aws.amazon.com/codepipeline/[AWS Codepipeline] and link:https://aws.amazon.com/lambda/[AWS Lambda] can be used for continuous deployment on link:https://aws.amazon.com/eks/[Amazon EKS].
+This module is designed to improve your understanding of the link:https://aws.amazon.com/codestar/[AWS Code*] services like, link:https://aws.amazon.com/codecommit/[AWS CodeCommit], link:https://aws.amazon.com/codebuild/[AWS CodeBuild], link:https://aws.amazon.com/codepipeline/[AWS CodePipeline] and link:https://aws.amazon.com/lambda/[AWS Lambda] can be used for continuous deployment on link:https://aws.amazon.com/eks/[Amazon EKS].
 
 The following *Reference Architecture* details the how the above AWS services will be leveraged and the specific steps we will follow for this module.
 
-=== Reference Architecure
+=== Reference Architecture
 image:architecture.png[Architecture]
 
 === Setting up the CI/CD Pipeline
@@ -39,14 +39,14 @@ The Service role is an IAM role that gives CodePipeline permission to use resour
 
 CodePipeline uses this service role when processing revisions through the stages and actions in a pipeline. That role is configured with one or more policies that control access to the AWS resources used by the pipeline. You might want to attach additional policies to this role, edit the policy attached to the role, or configure policies for other service roles in AWS. You might also want to attach a policy to a role when configuring cross-account access to your pipeline. 
 
-Step 1:: In the Cloud9 IDE `terminal`, navigate to this modules working directory.
+Step 1:: In the Cloud9 IDE `terminal`, navigate to this module's working directory.
 +
 [source,shell]
 ----
 cd ~/environment/aws-modernization-workshop-advanced/modules/cicd/
 ----
 +
-Step 2:: Next we wil create the necessary Service Roles using the CloudFormation template in this modules wotking directory by running the follopwing AWS CLI command:
+Step 2:: Next, we will create the necessary Service Roles using the CloudFormation template in this module;s working directory by running the following AWS CLI command:
 +
 [source,shell]
 ----
@@ -72,7 +72,7 @@ until [[ `aws cloudformation describe-stacks --stack-name "${USER_NAME}-cicd-rol
 ----
 
 ==== Create Container Repository
-As we saw with the other examples in this workshop, we will need to store our demo applications' docker containers, so next we'll create an AWS ECR respository for the application contianers by running the following command:
+As we saw with the other examples in this workshop, we will need to store our demo applications' docker containers, so next we'll create an AWS ECR repository for the application containers by running the following command:
 
 [source,shell]
 ----
@@ -94,8 +94,8 @@ Example Output:
 }
 ----
 
-==== Create Source Version Control for the Demo Applicaiton
-Step 1:: Next we will create an AWS CodeCommit repository to store the source code for our sample EKS project. This is the source code for the application we are "developing" and will eventually push to "production" using our CI/CD Pipeline. Execute the following command in the Ckoud9 `terminal`.
+==== Create Source Version Control for the Demo Application
+Step 1:: Next, we will create an AWS CodeCommit repository to store the source code for our sample EKS project. This is the source code for the application we are "developing" and will eventually push to "production" using our CI/CD Pipeline. Execute the following command in the Ckoud9 `terminal`.
 +
 [source,shell]
 ----
@@ -121,7 +121,7 @@ Example Output:
 }
 ----
 +
-Step 2:: Next we will commit our sample application to the CodeCommit reposutory created above, by running the following commands:
+Step 2:: Next we will commit our sample application to the CodeCommit repository created above, by running the following commands:
 +
 [source,shell]
 ----
@@ -154,17 +154,17 @@ git add . && git commit -m "initial commit of sample app" && git push origin mas
 ----
 
 ==== Create the CI/CD Pipeline
-Step 1:: Now that we have a place to store our docker container, a source code repository and the necessary Service roles, we can create our CI/CD Pipeline. Open a broweser tab and navigate to the link:https://us-west-2.console.aws.amazon.com/codesuite/codepipeline/pipelines[AWS CodePipeline] Service Console. Click on *Create pipeline*.
+Step 1:: Now that we have a place to store our docker container, a source code repository and the necessary Service roles, we can create our CI/CD Pipeline. Open a browser tab and navigate to the link:https://us-west-2.console.aws.amazon.com/codesuite/codepipeline/pipelines[AWS CodePipeline] Service Console. Click on *Create pipeline*.
 +
 image:create-pipeline.png[Create Pipeline]
 +
-Step 2:: After the *Create new pipline* wizard opens, the first step is to configure the *Pipeline settings*. Enter `[red yellow-background]#<User Name>#-CICD-Demo` (_substituting your unique user name_), as the *Pipeline name*.
+Step 2:: After the *Create new pipeline* wizard opens, the first step is to configure the *Pipeline settings*. Enter `[red yellow-background]#<User Name>#-CICD-Demo` (_substituting your unique user name_), as the *Pipeline name*.
 +
 Select *Existing service role* and from the drop-down, select the IAM role we created in *Step 2*.
 +
 NOTE: The *Role name* should start with `[red yellow-background]#<User Name>#-cicd-roles-CodepipleServiceRole-...`.
 +
-Step 3:: Expand the *Advanced settings*, under *Artifact store*, click *Custom location*. From the *Bucket* drop-down list, select the S3 Buvket created in *Step 2*.
+Step 3:: Expand the *Advanced settings*, under *Artifact store*, click *Custom location*. From the *Bucket* drop-down list, select the S3 Bucket created in *Step 2*.
 +
 NOTE: The *Bucket* name should start with `[red yellow-background]#<User Name>#-cicd-demo-roles-ekscicddemobucket-...`.
 +
@@ -210,7 +210,7 @@ image:build-environment.png[Build Environment]
 +
 Step 17:: Expand the *Additional configuration* section and add the following *Environmental variables* as the `Name`:
 +
-* `AWS_ACCOUNT_ID` - Add your 12 digit AWS Account provided as the value.
+* `AWS_ACCOUNT_ID` - Add your 12-digit AWS Account provided as the value.
 * `IMAGE_REPO_NAME` - Add `[red yellow-background]#<User Name>#-cicd-repo` as the value (_substituting your unique user name_).
 +
 IMPORTANT: Make sure there are no spaces in any of the values entered!
@@ -241,7 +241,7 @@ Step 1:: Let's get started setting up the lambda function by first ensuring we a
 cd ~/environment/aws-modernization-workshop-advanced/modules/cicd/lambda-eks
 ----
 +
-Step 2:: Next we will add some of our EKS parameters to the lambda configuration, by running the following commands
+Step 2:: Next, we will add some of our EKS parameters to the lambda configuration, by running the following commands
 +
 [source,shell]
 ----
@@ -267,12 +267,12 @@ These commands will:
 +
 . Add the EKS Certificate to the deployment lambda configuration.
 . Add the EKS Endpoint to the deployment lambda configuration.
-. Add the EKS Cluster name to the depployment lambda configuration.
+. Add the EKS Cluster name to the deployment lambda configuration.
 . Add an EKS Cluster user and context, called `lambda`, to the deployment lambda configuration.
 +
 NOTE: Running the above command assumes a working EKS cluster, called `petstore`, created in *Amazon EKS* module.
 +
-Step 3:: Next we create a link:https://kubernetes.io/docs/concepts/configuration/secret/[Kubernetes Secret] to give our deployment lambda access to the EKS cluster. First, we need to get the the `secrets` resource.
+Step 3:: Next, we create a link:https://kubernetes.io/docs/concepts/configuration/secret/[Kubernetes Secret] to give our deployment lambda access to the EKS cluster. First, we need to get the `secrets` resource.
 +
 [source,shell]
 ----
@@ -287,14 +287,14 @@ Example Output:
 default-token-wnlw5
 ----
 +
-Step 4:: Now we update the deployment lambda confguration file with the secrets token from the above output.
+Step 4:: Now we update the deployment lambda configuration file with the secrets token from the above output.
 +
 [source,shell]
 ----
 sed -i -e "s#\$TOKEN#$(kubectl get secret $SECRET_NAME -o json | jq -r '.data["token"]' | base64 -d)#g" ./config
 ----
 +
-Step 5:: Next we build out lamabda function, package the necessary Javascript resources and then deploy it, uby running the following commands:
+Step 5:: Next, we build out lambda function, package the necessary JavaScript resources and then deploy it by running the following commands:
 +
 [source,shell]
 ----
@@ -320,8 +320,8 @@ aws lambda create-function --function-name ${USER_NAME}-LambdaKubeClient \
 +
 These commands will:
 +
-. Install the Javascript package manager.
-. Compress the Javascript packages for lambda deployment.
+. Install the JavaScript package manager.
+. Compress the JavaScript packages for lambda deployment.
 . Get the link:https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html[Amazon Resource Name (ARN)] for the IAM Service Role that gives lambda the necessary EKS service permissions.
 . Deploy the lambda function, `[red yellow-background]#<User Name>#-LambdaKubeClient`, using the AWS CLI.
 
@@ -364,7 +364,7 @@ clusterrolebinding.rbac.authorization.k8s.io/default-admin created
 ----
 
 ==== Add the Deployment Stage to the Ci/CD Pipeline
-Now that all our components are in place, we need to add a *Deployment* stage to our CI/CD pipeline, in order to deploiy our Demo Application to Kubernetes i.e. into production.
+Now that all our components are in place, we need to add a *Deployment* stage to our CI/CD pipeline, in order to deploy our Demo Application to Kubernetes i.e. into production.
 
 Step 1:: In your browser, navigate to the link:https://us-west-2.console.aws.amazon.com/codesuite/codepipeline/pipelines[AWS CodePipeline] Service Console and click on the `[red yellow-background]#<User Name>#-CICD-Demo` pipeline we created.
 +
@@ -372,7 +372,7 @@ Step 2:: To add a new stage to our pipeline, click the *Edit* button.
 +
 image:pipeline-edit.png[Edit Pipeline]
 +
-Step 3:: Next we add a new stage after our *Build* stage by clicking the *Add stage* button.
+Step 3:: Next, we add a new stage after our *Build* stage by clicking the *Add stage* button.
 +
 image:pipeline-add-stage.png[Add Stage]
 +
@@ -380,7 +380,7 @@ Step 4:: When prompted, to provide the *Stage name*, enter *Deploy* and click th
 +
 image:pipeline-stage-name.png[Deploy Stage]
 +
-Step 5:: We now have a new stage to our pipeline called *Deploy*. Next we need to configure the actions that this stage needs to perform for our pipeline. To get started, click on the *Add action group* button.
+Step 5:: We now have a new stage to our pipeline called *Deploy*. Next, we need to configure the actions that this stage needs to perform for our pipeline. To get started, click on the *Add action group* button.
 +
 image:pipeline-add-action.png[Add Action Group]
 +
@@ -403,7 +403,7 @@ Step 12:: Click *Save* to update our pipeline changes.
 image:pipeline-save.png[Save Pipeline]
 
 === Executing the CI/CD Pipeline
-We now have a complete CI/CD pipeline that takes any code changes, triggered from our our Source Version Control repository, creates a new Kubernetes deployment coontainer and deploys this into production on our EKS cluster. To simulate the entire CI/CD process, click the *Release chnage* button to trigger the pipeline.
+We now have a complete CI/CD pipeline that takes any code changes, triggered from our Source Version Control repository, creates a new Kubernetes deployment container and deploys this into production on our EKS cluster. To simulate the entire CI/CD process, click the *Release change* button to trigger the pipeline.
 
 image:pipeline-complete.png[Pipeline Complete]
 
@@ -421,4 +421,4 @@ NAME                 DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE    CONTAIN
 eks-cicd-demo-repo   1         1         1            1           124m   eks-cicd-demo-repo   <REDACTED>>.dkr.ecr.us-west-2.amazonaws.com/eks-cicd-demo-repo:latest   name=eks-cicd-demo-repo
 ----
 
-Feel free to make some code changes to the application source and and see those changes get driven into production using your new CI/CD pipeline.
+Feel free to make some code changes to the application source and see those changes get driven into production using your new CI/CD pipeline.

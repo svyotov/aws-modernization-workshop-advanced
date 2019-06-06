@@ -20,7 +20,7 @@ None
 15-20 minutes
 ****
 
-In order for you to successfully complete the workshop, we need you to run through a few steps to finalize the configuration of your AWS Cloud9 environment. Your AWS Cloud9 environment is accessable from the link:https://us-west-2.console.aws.amazon.com/cloud9/home?region=us-west-2#[AWS Console]. Once you've accessed the console, open the `[red yellow-background]#<User Name>#-AWSModernizationWorkshop-IDEStack` IDE.
+In order for you to successfully complete the workshop, we need you to run through a few steps to finalize the configuration of your AWS Cloud9 environment. Your AWS Cloud9 environment is accessible from the link:https://us-west-2.console.aws.amazon.com/cloud9/home?region=us-west-2#[AWS Console]. Once you've accessed the console, open the `[red yellow-background]#<User Name>#-AWSModernizationWorkshop-IDEStack` IDE.
 
 image::cloud9-launch.png[Ope IDE]
 
@@ -123,7 +123,7 @@ exec $SHELL
 ----
 
 === Launch an EKS Cluster
-It takes a few minutes to launch an EKS cluster, so we will have you launch one now, so that the installation can complete while you continue with the some initial modules. We will launch our EKS Cluster using the `eksctl` tool.
+It takes a few minutes to launch an EKS cluster, so we will have you launch one now, so that the installation can complete while you continue with the initial modules. We will launch our EKS Cluster using the `eksctl` tool.
 
 Step 1:: `eksctl` requires an SSH Key to configure your EKS nodes with.
 +

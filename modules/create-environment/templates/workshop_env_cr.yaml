@@ -111,6 +111,7 @@ Resources:
             - ec2:ModifyVolume
             - ec2:ModifyVolumeAttributes
             - ec2:RebootInstances
+            - ec2:StopInstances
             - ec2:ReplaceIamInstanceProfileAssociation
             - ec2:ReportInstanceStatus
             - iam:ListInstanceProfiles

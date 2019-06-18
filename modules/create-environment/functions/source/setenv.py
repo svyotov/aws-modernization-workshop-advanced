@@ -83,6 +83,8 @@ def create(event, context):
 
     # Modify the size of the Cloud9 IDE EBS volume
     client.get_waiter('instance_status_ok').wait(InstanceIds=[instance['InstanceId']])
+    print("Shutting down instance {}.".format(instance['InstanceId']))
+    client.stop_instances(InstanceIds=[instance['InstanceId']])
     print("Resizing volume {} for instance {} to {}. This will take several minutes to complete.".format(block_volume_id,instance['InstanceId'],event['ResourceProperties']['EBSVolumeSize']))
     client.modify_volume(VolumeId=block_volume_id,Size=int(event['ResourceProperties']['EBSVolumeSize']))
 
@@ -91,8 +93,8 @@ def create(event, context):
     while volume_state['ModificationState'] != 'completed':
         time.sleep(5)
         volume_state = client.describe_volumes_modifications(VolumeIds=[block_volume_id])['VolumesModifications'][0]
-    print("Restarting instance {}.".format(instance_name))
-    client.reboot_instances(InstanceIds=[instance['InstanceId']])
+    #print("Restarting instance {}.".format(instance_name))
+    #client.reboot_instances(InstanceIds=[instance['InstanceId']])
     response_data = {}
     return physical_resource_id, response_data
 
